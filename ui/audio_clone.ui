@@ -259,6 +259,83 @@ QPushButton:pressed {
        </widget>
       </item>
       <item>
+       <widget class="QGroupBox" name="modelGroup">
+        <property name="title">
+         <string>MODEL SELECTION</string>
+        </property>
+        <property name="minimumHeight">
+         <number>60</number>
+        </property>
+        <layout class="QVBoxLayout" name="modelLayout">
+         <property name="spacing">
+          <number>8</number>
+         </property>
+         <property name="leftMargin">
+          <number>0</number>
+         </property>
+         <property name="topMargin">
+          <number>10</number>
+         </property>
+         <property name="rightMargin">
+          <number>0</number>
+         </property>
+         <property name="bottomMargin">
+          <number>10</number>
+         </property>
+         <item>
+          <widget class="QComboBox" name="modelComboBox">
+           <property name="minimumHeight">
+            <number>32</number>
+           </property>
+           <property name="styleSheet">
+            <string notr="true">QComboBox {
+    background: #14100f;
+    color: #c4a77d;
+    border: 2px solid #2a1d19;
+    border-radius: 0px;
+    padding: 6px 10px;
+    font-size: 11px;
+}
+
+QComboBox:hover {
+    border-color: #3d2b25;
+}
+
+QComboBox:focus {
+    border-color: #c4a77d;
+}
+
+QComboBox::drop-down {
+    border: none;
+    background: #2a1d19;
+    width: 20px;
+}
+
+QComboBox::down-arrow {
+    image: none;
+    border: 2px solid #c4a77d;
+    border-top: none;
+    border-right: none;
+    width: 6px;
+    height: 6px;
+    margin-right: 8px;
+}
+
+QComboBox QAbstractItemView {
+    background: #14100f;
+    color: #c4a77d;
+    border: 2px solid #2a1d19;
+    selection-background-color: #3d2b25;
+    selection-color: #e8d5c4;
+    padding: 4px;
+}</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </widget>
+      </item>
+      <item>
        <widget class="QGroupBox" name="textGroup">
         <property name="title">
          <string>TEXT TO SYNTHESIZE</string>
@@ -458,98 +535,6 @@ QPushButton:pressed {
 
 QPushButton:disabled {
     background: #1a1412;
-    color: #6b5c52;
-    border-color: #2a1d19;
-}</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QPushButton" name="btnPlay">
-          <property name="minimumSize">
-           <size>
-            <width>0</width>
-            <height>44</height>
-           </size>
-          </property>
-          <property name="text">
-           <string>PLAY</string>
-          </property>
-          <property name="enabled">
-           <bool>false</bool>
-          </property>
-          <property name="styleSheet">
-           <string notr="true">QPushButton {
-    background: #1a1412;
-    color: #c4a77d;
-    border: 2px solid #3d2b25;
-    border-radius: 0px;
-    font-size: 11px;
-    font-weight: bold;
-    letter-spacing: 0px;
-    padding: 6px 12px;
-    text-align: center;
-}
-
-QPushButton:hover {
-    background: #3d2b25;
-    color: #e8d5c4;
-    border-color: #c4a77d;
-}
-
-QPushButton:pressed {
-    background: #c4a77d;
-    color: #1a1412;
-    border-color: #c4a77d;
-}
-
-QPushButton:disabled {
-    color: #6b5c52;
-    border-color: #2a1d19;
-}</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QPushButton" name="btnSave">
-          <property name="minimumSize">
-           <size>
-            <width>0</width>
-            <height>44</height>
-           </size>
-          </property>
-          <property name="text">
-           <string>SAVE</string>
-          </property>
-          <property name="enabled">
-           <bool>false</bool>
-          </property>
-          <property name="styleSheet">
-           <string notr="true">QPushButton {
-    background: #1a1412;
-    color: #c4a77d;
-    border: 2px solid #3d2b25;
-    border-radius: 0px;
-    font-size: 11px;
-    font-weight: bold;
-    letter-spacing: 0px;
-    padding: 6px 12px;
-    text-align: center;
-}
-
-QPushButton:hover {
-    background: #3d2b25;
-    color: #e8d5c4;
-    border-color: #c4a77d;
-}
-
-QPushButton:pressed {
-    background: #c4a77d;
-    color: #1a1412;
-    border-color: #c4a77d;
-}
-
-QPushButton:disabled {
     color: #6b5c52;
     border-color: #2a1d19;
 }</string>

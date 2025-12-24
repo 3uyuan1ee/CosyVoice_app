@@ -13,117 +13,537 @@
   <property name="windowTitle">
    <string>音频克隆</string>
   </property>
+  <property name="styleSheet">
+   <string notr="true">QWidget#AudioClone {
+    background: #1a1412;
+}
+
+QLabel {
+    background: transparent;
+    font-family: &quot;Press Start 2P&quot;, &quot;Courier New&quot;, monospace;
+}
+
+QGroupBox {
+    background: transparent;
+    border: 2px solid #2a1d19;
+    border-radius: 0px;
+    margin-top: 16px;
+    padding-top: 12px;
+    padding-left: 12px;
+    font-size: 10px;
+    letter-spacing: 0px;
+    text-transform: uppercase;
+    color: #8d7b68;
+    font-weight: bold;
+}
+
+QGroupBox::title {
+    subcontrol-origin: margin;
+    subcontrol-position: top left;
+    left: 8px;
+    top: -8px;
+    padding: 0 4px 0 4px;
+    background: #1a1412;
+}
+
+QLineEdit {
+    background: #14100f;
+    color: #c4a77d;
+    border: 2px solid #2a1d19;
+    border-radius: 0px;
+    padding: 8px 10px;
+    font-size: 11px;
+    selection-background-color: #3d2b25;
+}
+
+QLineEdit:focus {
+    border-color: #c4a77d;
+    background: #1a1412;
+}
+
+QLineEdit::placeholder {
+    color: #6b5c52;
+}
+
+QTextEdit {
+    background: #14100f;
+    color: #c4a77d;
+    border: 2px solid #2a1d19;
+    border-radius: 0px;
+    padding: 10px;
+    font-size: 11px;
+    line-height: 1.4;
+    selection-background-color: #3d2b25;
+}
+
+QTextEdit:focus {
+    border-color: #c4a77d;
+    background: #1a1412;
+}
+
+QTextEdit::placeholder {
+    color: #6b5c52;
+}
+
+QSlider::groove:horizontal {
+    border: 2px solid #2a1d19;
+    height: 8px;
+    background: #14100f;
+    margin: 6px 0;
+    border-radius: 0px;
+}
+
+QSlider::handle:horizontal {
+    background: #c4a77d;
+    border: 2px solid #2a1d19;
+    width: 16px;
+    height: 16px;
+    margin: -6px 0;
+    border-radius: 0px;
+}
+
+QSlider::handle:horizontal:hover {
+    background: #e8d5c4;
+    border-color: #c4a77d;
+}
+
+QProgressBar {
+    background: #14100f;
+    border: 2px solid #2a1d19;
+    border-radius: 0px;
+    height: 12px;
+    text-align: center;
+}
+
+QProgressBar::chunk {
+    background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
+                                stop:0 #5a4339,
+                                stop:1 #8d7b68);
+    border-radius: 0px;
+    border: 1px solid #3d2b25;
+}</string>
+  </property>
   <layout class="QVBoxLayout" name="verticalLayout">
+   <property name="spacing">
+    <number>0</number>
+   </property>
+   <property name="leftMargin">
+    <number>0</number>
+   </property>
+   <property name="topMargin">
+    <number>0</number>
+   </property>
+   <property name="rightMargin">
+    <number>0</number>
+   </property>
+   <property name="bottomMargin">
+    <number>0</number>
+   </property>
    <item>
-    <widget class="QLabel" name="titleLabel">
-     <property name="text">
-      <string>音频克隆</string>
-     </property>
+    <widget class="QWidget" name="contentWidget">
      <property name="styleSheet">
-      <string notr="true">font-size: 24px;
-font-weight: bold;
-color: #2c3e50;
-padding: 10px;</string>
+      <string notr="true">QWidget#contentWidget {
+    background: #1a1412;
+}</string>
      </property>
-    </widget>
-   </item>
-   <item>
-    <widget class="QGroupBox" name="referenceGroup">
-     <property name="title">
-      <string>参考音频</string>
-     </property>
-     <layout class="QVBoxLayout" name="referenceLayout">
+     <layout class="QVBoxLayout" name="contentLayout">
+      <property name="spacing">
+       <number>32</number>
+      </property>
+      <property name="leftMargin">
+       <number>48</number>
+      </property>
+      <property name="topMargin">
+       <number>40</number>
+      </property>
+      <property name="rightMargin">
+       <number>48</number>
+      </property>
+      <property name="bottomMargin">
+       <number>40</number>
+      </property>
       <item>
-       <widget class="QLabel" name="label">
+       <widget class="QLabel" name="titleLabel">
         <property name="text">
-         <string>选择参考音频文件：</string>
+         <string>AUDIO CLONE</string>
+        </property>
+        <property name="styleSheet">
+         <string notr="true">color: #c4a77d;
+    font-size: 18px;
+    font-weight: bold;
+    letter-spacing: 1px;
+    background: transparent;</string>
         </property>
        </widget>
       </item>
       <item>
-       <layout class="QHBoxLayout" name="refAudioLayout">
-        <item>
-         <widget class="QLineEdit" name="refAudioPath">
-          <property name="placeholderText">
-           <string>未选择文件</string>
-          </property>
-          <property name="readOnly">
-           <bool>true</bool>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QPushButton" name="btnSelectRefAudio">
-          <property name="text">
-           <string>浏览...</string>
-          </property>
-         </widget>
-        </item>
-       </layout>
-      </item>
-     </layout>
-    </widget>
-   </item>
-   <item>
-    <widget class="QGroupBox" name="textGroup">
-     <property name="title">
-      <string>合成文本</string>
-     </property>
-     <layout class="QVBoxLayout" name="textLayout">
-      <item>
-       <widget class="QTextEdit" name="textInput">
-        <property name="placeholderText">
-         <string>请输入要合成的文本内容...</string>
+       <widget class="QGroupBox" name="referenceGroup">
+        <property name="title">
+         <string>REFERENCE AUDIO</string>
         </property>
-        <property name="minimumHeight">
-         <number>150</number>
+        <layout class="QVBoxLayout" name="referenceLayout">
+         <property name="spacing">
+          <number>12</number>
+         </property>
+         <property name="leftMargin">
+          <number>0</number>
+         </property>
+         <property name="topMargin">
+          <number>20</number>
+         </property>
+         <property name="rightMargin">
+          <number>0</number>
+         </property>
+         <property name="bottomMargin">
+          <number>0</number>
+         </property>
+         <item>
+          <layout class="QHBoxLayout" name="refAudioLayout">
+           <property name="spacing">
+            <number>12</number>
+           </property>
+           <item>
+            <widget class="QLineEdit" name="refAudioPath">
+             <property name="placeholderText">
+              <string>Select reference audio file</string>
+             </property>
+             <property name="readOnly">
+              <bool>true</bool>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QPushButton" name="btnSelectRefAudio">
+             <property name="text">
+              <string>BROWSE</string>
+             </property>
+             <property name="cursor">
+              <cursor>PointingHandCursor</cursor>
+             </property>
+             <property name="styleSheet">
+              <string notr="true">QPushButton {
+    background: #1a1412;
+    color: #c4a77d;
+    border: 2px solid #3d2b25;
+    border-radius: 0px;
+    font-size: 10px;
+    font-weight: bold;
+    letter-spacing: 0px;
+    padding: 4px 8px;
+    text-align: center;
+}
+
+QPushButton:hover {
+    background: #3d2b25;
+    color: #e8d5c4;
+    border-color: #c4a77d;
+}
+
+QPushButton:pressed {
+    background: #c4a77d;
+    color: #1a1412;
+    border-color: #c4a77d;
+}</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </item>
+        </layout>
+       </widget>
+      </item>
+      <item>
+       <widget class="QGroupBox" name="textGroup">
+        <property name="title">
+         <string>TEXT TO SYNTHESIZE</string>
+        </property>
+        <layout class="QVBoxLayout" name="textLayout">
+         <property name="spacing">
+          <number>0</number>
+         </property>
+         <property name="leftMargin">
+          <number>0</number>
+         </property>
+         <property name="topMargin">
+          <number>20</number>
+         </property>
+         <property name="rightMargin">
+          <number>0</number>
+         </property>
+         <property name="bottomMargin">
+          <number>0</number>
+         </property>
+         <item>
+          <widget class="QTextEdit" name="textInput">
+           <property name="placeholderText">
+            <string>Enter text to synthesize...</string>
+           </property>
+           <property name="minimumHeight">
+            <number>140</number>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </widget>
+      </item>
+      <item>
+       <widget class="QGroupBox" name="optionsGroup">
+        <property name="title">
+         <string>PITCH ADJUSTMENT</string>
+        </property>
+        <layout class="QVBoxLayout" name="optionsLayout">
+         <property name="spacing">
+          <number>16</number>
+         </property>
+         <property name="leftMargin">
+          <number>0</number>
+         </property>
+         <property name="topMargin">
+          <number>20</number>
+         </property>
+         <property name="rightMargin">
+          <number>0</number>
+         </property>
+         <property name="bottomMargin">
+          <number>0</number>
+         </property>
+         <item>
+          <layout class="QHBoxLayout" name="pitchLayout">
+           <property name="spacing">
+            <number>16</number>
+           </property>
+           <item>
+            <widget class="QLabel" name="pitchLabel">
+             <property name="text">
+              <string>PITCH</string>
+             </property>
+             <property name="styleSheet">
+              <string notr="true">color: #8d7b68;
+    font-size: 10px;
+    letter-spacing: 0px;
+    background: transparent;</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QSlider" name="pitchSlider">
+             <property name="minimum">
+              <number>-12</number>
+             </property>
+             <property name="maximum">
+              <number>12</number>
+             </property>
+             <property name="value">
+              <number>0</number>
+             </property>
+             <property name="orientation">
+              <enum>Qt::Orientation::Horizontal</enum>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QLabel" name="pitchValue">
+             <property name="text">
+              <string>0</string>
+             </property>
+             <property name="minimumSize">
+              <size>
+               <width>32</width>
+               <height>0</height>
+              </size>
+             </property>
+             <property name="alignment">
+              <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+             </property>
+             <property name="styleSheet">
+              <string notr="true">color: #c4a77d;
+    font-size: 10px;
+    font-weight: bold;
+    background: transparent;</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </item>
+        </layout>
+       </widget>
+      </item>
+      <item>
+       <widget class="QProgressBar" name="progressBar">
+        <property name="value">
+         <number>0</number>
+        </property>
+        <property name="textVisible">
+         <bool>false</bool>
+        </property>
+        <property name="styleSheet">
+         <string notr="true">QProgressBar {
+    background: #14100f;
+    border: 1px solid #2a1d19;
+    border-radius: 2px;
+    height: 4px;
+    text-align: center;
+}
+
+QProgressBar::chunk {
+    background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
+                                stop:0 #5a4339,
+                                stop:1 #8d7b68);
+    border-radius: 2px;
+}</string>
         </property>
        </widget>
       </item>
-     </layout>
-    </widget>
-   </item>
-   <item>
-    <widget class="QGroupBox" name="optionsGroup">
-     <property name="title">
-      <string>选项</string>
-     </property>
-     <layout class="QVBoxLayout" name="optionsLayout">
       <item>
-       <layout class="QHBoxLayout" name="pitchLayout">
+       <layout class="QHBoxLayout" name="buttonLayout">
+        <property name="spacing">
+         <number>12</number>
+        </property>
         <item>
-         <widget class="QLabel" name="pitchLabel">
-          <property name="text">
-           <string>音调调整：</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QSlider" name="pitchSlider">
-          <property name="minimum">
-           <number>-12</number>
-          </property>
-          <property name="maximum">
-           <number>12</number>
-          </property>
-          <property name="value">
-           <number>0</number>
-          </property>
-          <property name="orientation">
-           <enum>Qt::Orientation::Horizontal</enum>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QLabel" name="pitchValue">
-          <property name="text">
-           <string>0</string>
-          </property>
+         <widget class="QPushButton" name="btnGenerate">
           <property name="minimumSize">
            <size>
-            <width>30</width>
-            <height>0</height>
+            <width>0</width>
+            <height>44</height>
            </size>
+          </property>
+          <property name="text">
+           <string>GENERATE</string>
+          </property>
+          <property name="enabled">
+           <bool>false</bool>
+          </property>
+          <property name="cursor">
+           <cursor>PointingHandCursor</cursor>
+          </property>
+          <property name="styleSheet">
+           <string notr="true">QPushButton {
+    background: #3d2b25;
+    color: #e8d5c4;
+    border: 2px solid #5a4339;
+    border-radius: 0px;
+    font-size: 11px;
+    font-weight: bold;
+    letter-spacing: 0px;
+    padding: 6px 12px;
+    text-align: center;
+}
+
+QPushButton:hover {
+    background: #5a4339;
+    color: #c4a77d;
+    border-color: #c4a77d;
+}
+
+QPushButton:pressed {
+    background: #c4a77d;
+    color: #1a1412;
+    border-color: #c4a77d;
+}
+
+QPushButton:disabled {
+    background: #1a1412;
+    color: #6b5c52;
+    border-color: #2a1d19;
+}</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="btnPlay">
+          <property name="minimumSize">
+           <size>
+            <width>0</width>
+            <height>44</height>
+           </size>
+          </property>
+          <property name="text">
+           <string>PLAY</string>
+          </property>
+          <property name="enabled">
+           <bool>false</bool>
+          </property>
+          <property name="cursor">
+           <cursor>PointingHandCursor</cursor>
+          </property>
+          <property name="styleSheet">
+           <string notr="true">QPushButton {
+    background: #1a1412;
+    color: #c4a77d;
+    border: 2px solid #3d2b25;
+    border-radius: 0px;
+    font-size: 11px;
+    font-weight: bold;
+    letter-spacing: 0px;
+    padding: 6px 12px;
+    text-align: center;
+}
+
+QPushButton:hover {
+    background: #3d2b25;
+    color: #e8d5c4;
+    border-color: #c4a77d;
+}
+
+QPushButton:pressed {
+    background: #c4a77d;
+    color: #1a1412;
+    border-color: #c4a77d;
+}
+
+QPushButton:disabled {
+    color: #6b5c52;
+    border-color: #2a1d19;
+}</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="btnSave">
+          <property name="minimumSize">
+           <size>
+            <width>0</width>
+            <height>44</height>
+           </size>
+          </property>
+          <property name="text">
+           <string>SAVE</string>
+          </property>
+          <property name="enabled">
+           <bool>false</bool>
+          </property>
+          <property name="cursor">
+           <cursor>PointingHandCursor</cursor>
+          </property>
+          <property name="styleSheet">
+           <string notr="true">QPushButton {
+    background: #1a1412;
+    color: #c4a77d;
+    border: 2px solid #3d2b25;
+    border-radius: 0px;
+    font-size: 11px;
+    font-weight: bold;
+    letter-spacing: 0px;
+    padding: 6px 12px;
+    text-align: center;
+}
+
+QPushButton:hover {
+    background: #3d2b25;
+    color: #e8d5c4;
+    border-color: #c4a77d;
+}
+
+QPushButton:pressed {
+    background: #c4a77d;
+    color: #1a1412;
+    border-color: #c4a77d;
+}
+
+QPushButton:disabled {
+    color: #6b5c52;
+    border-color: #2a1d19;
+}</string>
           </property>
          </widget>
         </item>
@@ -131,64 +551,6 @@ padding: 10px;</string>
       </item>
      </layout>
     </widget>
-   </item>
-   <item>
-    <widget class="QProgressBar" name="progressBar">
-     <property name="value">
-      <number>0</number>
-     </property>
-    </widget>
-   </item>
-   <item>
-    <layout class="QHBoxLayout" name="buttonLayout">
-     <item>
-      <widget class="QPushButton" name="btnGenerate">
-       <property name="text">
-        <string>生成音频</string>
-       </property>
-       <property name="enabled">
-        <bool>false</bool>
-       </property>
-       <property name="styleSheet">
-        <string notr="true">QPushButton {
-     background-color: #27ae60;
-     color: white;
-     border-radius: 5px;
-     font-size: 14px;
-     padding: 8px 16px;
- }
-
- QPushButton:hover {
-     background-color: #229954;
- }
-
- QPushButton:disabled {
-     background-color: #bdc3c7;
- }</string>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <widget class="QPushButton" name="btnPlay">
-       <property name="text">
-        <string>播放</string>
-       </property>
-       <property name="enabled">
-        <bool>false</bool>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <widget class="QPushButton" name="btnSave">
-       <property name="text">
-        <string>保存</string>
-       </property>
-       <property name="enabled">
-        <bool>false</bool>
-       </property>
-      </widget>
-     </item>
-    </layout>
    </item>
   </layout>
  </widget>

@@ -166,18 +166,30 @@ class AudioGenerationWorker(QThread):
     def _preprocess_reference_audio(self) -> Optional[str]:
         """预处理参考音频"""
         try:
-            # 这里可以集成audio_preprocessor
-            # 目前直接返回原始路径
-            logger.info(f"Using reference audio: {self.reference_audio}")
-            return self.reference_audio
+            # 使用适配器的预处理功能
+            if hasattr(self._get_voice_generator(), 'preprocess_audio'):
+                voice_generator = self._get_voice_generator()
+                processed_path, success = voice_generator.preprocess_audio(self.reference_audio)
+
+                if success:
+                    logger.info(f"Audio preprocessed: {processed_path}")
+                    return processed_path
+                else:
+                    logger.warning("Audio preprocessing failed, using original")
+                    return self.reference_audio
+            else:
+                # 适配器不支持预处理,直接返回原始路径
+                logger.info(f"Using reference audio: {self.reference_audio}")
+                return self.reference_audio
 
         except Exception as e:
             logger.error(f"Error preprocessing audio: {e}")
-            return None
+            return self.reference_audio
 
     def _generate_audio(self, voice_generator, reference_audio: str) -> Optional[str]:
         """生成音频"""
         try:
+            from backend.voice_generation_adapter import GenerationRequest
             from backend.path_manager import PathManager
             import os
 
@@ -186,31 +198,45 @@ class AudioGenerationWorker(QThread):
             # 生成输出路径
             output_path = path_manager.get_temp_voice_path("generated")
 
-            # 模拟生成进度 (40% -> 80%)
+            logger.info("Starting audio generation...")
+
+            # 创建生成请求
+            request = GenerationRequest(
+                text=self.text,
+                reference_audio=reference_audio,
+                pitch_shift=self.pitch_shift,
+                output_path="generated",  # 适配器会生成完整路径
+                strategy="balanced",
+                enable_preprocessing=False,  # 已经在前期预处理过
+                enable_pitch_shift=True,
+                callback=lambda p, s: self._update_progress(p, s) if 40 <= p <= 80 else None
+            )
+
+            # 调用适配器生成音频
+            result = voice_generator.generate(request)
+
+            # 更新进度 (40% -> 80%)
             for progress in range(40, 85, 5):
                 if self._is_cancelled:
                     return None
-
-                time.sleep(0.3)  # 模拟处理时间
                 self._update_progress(progress, f"Generating audio... {progress}%")
+                time.sleep(0.1)  # 给UI更新的时间
 
-            # 这里调用实际的生成方法
-            # result = voice_generator.inference(
-            #     tts_text=self.text,
-            #     prompt_text=self.reference_audio,
-            #     pitch_shift=self.pitch_shift
-            # )
+            if result.success and result.output_path:
+                logger.info(f"Audio generated to: {result.output_path}")
 
-            # 由于实际API可能不同，这里创建一个模拟输出
-            # 实际实现时需要替换为真实API调用
+                # 更新元数据
+                if result.metadata:
+                    logger.info(f"  Duration: {result.metadata.get('duration', 'N/A')}s")
+                    logger.info(f"  Sample rate: {result.metadata.get('sample_rate', 'N/A')}Hz")
+                    logger.info(f"  Preprocessed: {result.metadata.get('preprocessed', False)}")
+                    logger.info(f"  Pitch shifted: {result.metadata.get('pitch_shifted', False)}")
 
-            # 创建模拟输出文件（仅用于测试）
-            with open(output_path, 'wb') as f:
-                # 写入一些虚拟数据
-                f.write(b'SIMULATED_AUDIO_DATA')
-
-            logger.info(f"Audio generated to: {output_path}")
-            return output_path
+                return result.output_path
+            else:
+                error_msg = result.error_message or "Unknown error"
+                logger.error(f"Audio generation failed: {error_msg}")
+                return None
 
         except Exception as e:
             logger.error(f"Error generating audio: {e}")
@@ -219,12 +245,6 @@ class AudioGenerationWorker(QThread):
     def _post_process_audio(self, audio_path: str) -> Optional[str]:
         """后处理音频"""
         try:
-            # 如果有音调调整，在这里应用
-            if self.pitch_shift != 0:
-                logger.info(f"Applying pitch shift: {self.pitch_shift}")
-                # 这里可以集成pitch_shift模块
-                time.sleep(0.2)  # 模拟处理时间
-
             # 验证输出文件
             import os
             if not os.path.exists(audio_path):

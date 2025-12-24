@@ -106,51 +106,91 @@ class ModelDownloadWorker(QThread):
         """
         带进度的下载实现
 
-        由于后端的download_model可能是阻塞的，我们需要适配它
+        使用轮询方式获取下载进度并更新UI
         """
         try:
-            # 方案1：如果download_manager支持回调，直接使用
-            # result = self.download_manager.download_model(
-            #     model_type,
-            #     progress_callback=progress_callback
-            # )
-
-            # 方案2：如果不支持，使用轮询状态
-            # 这里我们使用模拟的方式，实际需要根据后端接口调整
-
-            # 先启动下载（后台）
-            # 注意：这里需要实际的下载实现
-            # 目前用模拟代码
+            from backend.model_download_manager import DownloadSource
 
             self.signals.status_update.emit(self.model_id, "Connecting to server...")
 
-            # 模拟下载过程
-            total_size = 500 * 1024 * 1024  # 假设500MB
-            chunk_size = 10 * 1024 * 1024    # 每次处理10MB
+            # 由于model_download_manager的download_model是阻塞的
+            # 我们使用轮询方式来获取进度
 
-            for current in range(0, total_size + 1, chunk_size):
-                if not self._is_running or self._is_cancelled:
-                    return False
+            # 先启动一个后台线程来执行实际下载
+            import threading
+            download_result = {"success": False, "error": None}
+            download_complete = threading.Event()
 
-                # 模拟网络延迟
-                time.sleep(0.1)
+            def download_thread():
+                """后台下载线程"""
+                try:
+                    logger.info(f"Starting actual download for {model_type.value}")
+                    success = self.download_manager.download_model(
+                        model_type,
+                        source=DownloadSource.AUTO,
+                        force=False,
+                        install_deps=True
+                    )
+                    download_result["success"] = success
+                except Exception as e:
+                    logger.error(f"Download thread error: {e}")
+                    download_result["error"] = str(e)
+                finally:
+                    download_complete.set()
 
-                # 调用进度回调
-                should_continue = progress_callback(
-                    min(current, total_size),
-                    total_size,
-                    self.model_id
-                )
+            # 启动下载线程
+            thread = threading.Thread(target=download_thread, daemon=True)
+            thread.start()
 
-                if not should_continue:
-                    return False
+            # 轮询进度并更新UI
+            last_progress = 0
+            poll_count = 0
+            max_polls = 600  # 最多轮询10分钟 (600次 * 1秒)
 
-            # 实际实现时，这里应该调用真实的下载方法
-            # 例如：
-            # result = self.download_manager.download_model(model_type)
-            # return result
+            while not download_complete.is_set() and not self._is_cancelled:
+                poll_count += 1
 
-            return True
+                # 获取下载状态
+                status = self.download_manager.get_download_status(model_type)
+
+                if status:
+                    # 提取进度信息
+                    progress_value = int(getattr(status, 'progress', 0) * 100) if hasattr(status, 'progress') else 0
+                    downloaded = getattr(status, 'downloaded_size', last_progress)
+                    total = getattr(status, 'total_size', 0)
+
+                    # 更新进度（只有变化时才更新）
+                    if progress_value > last_progress or poll_count % 10 == 0:
+                        should_continue = progress_callback(downloaded, total, self.model_id)
+
+                        if not should_continue:
+                            return False
+
+                        last_progress = progress_value
+
+                # 等待一段时间再轮询
+                download_complete.wait(timeout=1.0)
+
+                # 超时检查
+                if poll_count >= max_polls:
+                    logger.warning("Download polling timeout")
+                    break
+
+            # 等待下载线程完成
+            thread.join(timeout=5.0)
+
+            # 检查下载结果
+            if self._is_cancelled:
+                logger.info("Download was cancelled")
+                return False
+
+            if download_result.get("success"):
+                logger.info(f"Download completed successfully for {model_type.value}")
+                return True
+            else:
+                error = download_result.get("error", "Unknown error")
+                logger.error(f"Download failed: {error}")
+                return False
 
         except Exception as e:
             logger.error(f"Download error: {str(e)}")

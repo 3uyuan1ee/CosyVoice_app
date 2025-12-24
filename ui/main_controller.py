@@ -11,14 +11,21 @@ class MainWindow(QMainWindow):
 
     def __init__(self):
         super().__init__()
-        # 加载 UI 文件
-        current_dir = os.path.dirname(os.path.abspath(__file__))
-        ui_path = os.path.join(current_dir, 'main_window.ui')
-        loadUi(ui_path, self)
+        try:
+            # 加载 UI 文件
+            current_dir = os.path.dirname(os.path.abspath(__file__))
+            ui_path = os.path.join(current_dir, 'main_window.ui')
+            loadUi(ui_path, self)
 
-        # 初始化
-        self.init_ui()
-        self.connect_signals()
+            # 初始化
+            self.init_ui()
+            self.connect_signals()
+
+        except Exception as e:
+            print(f"[ERROR] 主窗口初始化失败: {e}")
+            import traceback
+            traceback.print_exc()
+            raise
 
     def init_ui(self):
         """初始化界面"""
@@ -35,7 +42,7 @@ class MainWindow(QMainWindow):
         try:
             from ui.audio_clone_controller import AudioClonePanel
             # 如果还没加载音频克隆面板
-            if self.audioClonePlaceholder.isVisible():
+            if not hasattr(self, 'audio_clone_panel'):
                 # 清空占位符布局
                 layout = self.audioClonePage.layout()
                 while layout.count():
@@ -60,7 +67,7 @@ class MainWindow(QMainWindow):
         try:
             from ui.model_download_controller import ModelDownloadController
             # 如果还没加载模型下载面板
-            if self.modelDownloadPlaceholder.isVisible():
+            if not hasattr(self, 'model_download_panel'):
                 # 清空占位符布局
                 layout = self.modelDownloadPage.layout()
                 while layout.count():

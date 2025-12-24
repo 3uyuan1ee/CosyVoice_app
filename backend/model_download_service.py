@@ -2,6 +2,9 @@
 模型下载服务 - 封装模型下载业务逻辑
 """
 
+
+
+
 from typing import Dict, List, Optional
 from dataclasses import dataclass
 from enum import Enum
@@ -64,37 +67,43 @@ class ModelDownloadService:
                 id="cosyvoice3_2512",
                 name="CosyVoice3-0.5B-2512",
                 size="~1.2GB",
-                description="Latest CosyVoice3 model with 2.5kHz sampling rate. Best quality, recommended for most use cases."
+                description="Latest CosyVoice3 model with 2.5kHz sampling rate. Best quality, recommended for most use cases.",
+                model_type="cosyvoice3"
             ),
             ModelInfo(
                 id="cosyvoice2",
                 name="CosyVoice2-0.5B",
                 size="~980MB",
-                description="CosyVoice2 model with balanced performance and speed."
+                description="CosyVoice2 model with balanced performance and speed.",
+                model_type="cosyvoice2"
             ),
             ModelInfo(
                 id="cosyvoice_300m",
                 name="CosyVoice-300M",
                 size="~600MB",
-                description="Lightweight CosyVoice model, faster inference with good quality."
+                description="Lightweight CosyVoice model, faster inference with good quality.",
+                model_type="cosyvoice"
             ),
             ModelInfo(
                 id="cosyvoice_300m_sft",
                 name="CosyVoice-300M-SFT",
                 size="~620MB",
-                description="Fine-tuned 300M model for specific speaking styles."
+                description="Fine-tuned 300M model for specific speaking styles.",
+                model_type="cosyvoice"
             ),
             ModelInfo(
                 id="cosyvoice_300m_instruct",
                 name="CosyVoice-300M-Instruct",
                 size="~620MB",
-                description="Instruction-tuned model for precise control over voice characteristics."
+                description="Instruction-tuned model for precise control over voice characteristics.",
+                model_type="cosyvoice"
             ),
             ModelInfo(
                 id="cosyvoice_ttsfrd",
                 name="CosyVoice-TTSFRD",
                 size="~550MB",
-                description="Fast response model optimized for real-time applications."
+                description="Fast response model optimized for real-time applications.",
+                model_type="cosyvoice"
             ),
         ]
 

@@ -37,7 +37,7 @@ class ModelCardWidget(QWidget):
 
     def _init_ui(self):
         """初始化UI"""
-        self.setFixedHeight(120)
+        self.setMinimumHeight(130)  # 改为最小高度，允许内容自适应
 
         # 主布局
         layout = QVBoxLayout(self)

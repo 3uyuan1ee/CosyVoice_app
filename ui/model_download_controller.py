@@ -44,11 +44,8 @@ class ModelDownloadController(QWidget):
 
     def _init_ui(self):
         """初始化UI"""
-        # 设置容器布局
-        container_layout = self.modelsContainer.layout()
-        if not container_layout:
-            container_layout = QVBoxLayout(self.modelsContainer)
-            container_layout.setContentsMargins(0, 0, 0, 0)
+        # 容器布局已在UI文件中定义，这里不需要额外设置
+        pass
 
     def _load_models(self):
         """加载模型列表"""
@@ -62,6 +59,11 @@ class ModelDownloadController(QWidget):
             # 为每个模型创建卡片
             for model in models:
                 self._add_model_card(model)
+
+            # 在最后添加弹性空间，确保滚动能到底部
+            container_layout = self.modelsContainer.layout()
+            if container_layout:
+                container_layout.addStretch()
 
             logger.info(f"Loaded {len(models)} models")
 
@@ -78,7 +80,7 @@ class ModelDownloadController(QWidget):
                 model_name=model.name,
                 model_size=model.size,
                 model_description=model.description,
-                parent=self.ui.modelsContainer
+                parent=self.modelsContainer
             )
 
             # 检查模型状态
@@ -91,7 +93,7 @@ class ModelDownloadController(QWidget):
             card.cancel_clicked.connect(self._on_download_cancelled)
 
             # 添加到布局
-            self.ui.modelsContainer.layout().addWidget(card)
+            self.modelsContainer.layout().addWidget(card)
             self.model_cards[model.id] = card
 
             logger.info(f"Added model card: {model.name}")
@@ -108,7 +110,7 @@ class ModelDownloadController(QWidget):
         self.download_workers.clear()
 
         # 清空布局
-        layout = self.ui.modelsContainer.layout()
+        layout = self.modelsContainer.layout()
         while layout.count():
             item = layout.takeAt(0)
             if item.widget():
@@ -118,8 +120,8 @@ class ModelDownloadController(QWidget):
 
     def _connect_signals(self):
         """连接信号槽"""
-        self.ui.btnDownloadAll.clicked.connect(self._on_download_all_clicked)
-        self.ui.btnRefresh.clicked.connect(self._on_refresh_clicked)
+        self.btnDownloadAll.clicked.connect(self._on_download_all_clicked)
+        self.btnRefresh.clicked.connect(self._on_refresh_clicked)
 
     def _map_service_status(self, service_status) -> ModelStatus:
         """映射服务状态到UI状态"""

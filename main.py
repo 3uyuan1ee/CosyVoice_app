@@ -253,6 +253,17 @@ def main():
         # 9. 显示主窗口
         logger.info("显示主窗口...")
         main_window.show()
+        main_window.raise_()  # 将窗口提升到前台
+        main_window.activateWindow()  # 激活窗口
+
+        # 确保窗口在屏幕中央
+        screen = QApplication.primaryScreen()
+        if screen:
+            screen_geometry = screen.availableGeometry()
+            window_geometry = main_window.geometry()
+            x = (screen_geometry.width() - window_geometry.width()) // 2
+            y = (screen_geometry.height() - window_geometry.height()) // 2
+            main_window.move(x, y)
 
         # 10. 打印启动信息
         logger.info("=" * 60)

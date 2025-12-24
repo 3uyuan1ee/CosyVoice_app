@@ -1,0 +1,8 @@
+build/
+dist/
+*.egg-info/
+.idea
+SyncTalk/SyncTalk/
+.dev/
+static/voices/ref_voices
+static/voices/res_voices

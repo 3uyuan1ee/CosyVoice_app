@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>MainWindow</class>
+ <widget class="QMainWindow" name="MainWindow">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>1000</width>
+    <height>700</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>CosyVoice_app - 语音合成系统</string>
+  </property>
+  <widget class="QWidget" name="centralwidget">
+   <layout class="QVBoxLayout" name="verticalLayout">
+    <item>
+     <widget class="QLabel" name="titleLabel">
+      <property name="text">
+       <string>CosyVoice 语音合成系统</string>
+      </property>
+      <property name="alignment">
+       <set>Qt::AlignmentFlag::AlignCenter</set>
+      </property>
+      <property name="styleSheet">
+       <string notr="true">font-size: 28px;
+font-weight: bold;
+color: #2c3e50;
+padding: 20px;</string>
+      </property>
+     </widget>
+    </item>
+    <item>
+     <layout class="QHBoxLayout" name="buttonLayout">
+      <item>
+       <widget class="QPushButton" name="btnAudioClone">
+        <property name="text">
+         <string>音频克隆</string>
+        </property>
+        <property name="icon">
+         <iconset theme="audio-input-microphone"/>
+        </property>
+        <property name="minimumSize">
+         <size>
+          <width>200</width>
+          <height>100</height>
+         </size>
+        </property>
+        <property name="styleSheet">
+         <string notr="true">QPushButton {
+     background-color: #3498db;
+     color: white;
+     border-radius: 8px;
+     font-size: 16px;
+     padding: 10px;
+ }
+
+ QPushButton:hover {
+     background-color: #2980b9;
+ }</string>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </item>
+    <item>
+     <widget class="QStackedWidget" name="stackedWidget">
+      <property name="currentIndex">
+       <number>0</number>
+      </property>
+      <widget class="QWidget" name="welcomePage">
+       <layout class="QVBoxLayout" name="welcomeLayout">
+        <item>
+         <widget class="QLabel" name="welcomeLabel">
+          <property name="text">
+           <string>欢迎使用 CosyVoice 语音合成系统
+
+请从上方选择功能开始使用</string>
+          </property>
+          <property name="alignment">
+           <set>Qt::AlignmentFlag::AlignCenter</set>
+          </property>
+          <property name="styleSheet">
+           <string notr="true">font-size: 18px;
+color: #7f8c8d;
+padding: 50px;</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+      <widget class="QWidget" name="audioClonePage">
+       <layout class="QVBoxLayout" name="audioCloneLayout">
+        <item>
+         <widget class="QLabel" name="audioClonePlaceholder">
+          <property name="text">
+           <string>音频克隆功能 - 待加载</string>
+          </property>
+          <property name="alignment">
+           <set>Qt::AlignmentFlag::AlignCenter</set>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+     </widget>
+    </item>
+   </layout>
+  </widget>
+  <widget class="QStatusBar" name="statusbar"/>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>

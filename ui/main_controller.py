@@ -28,6 +28,7 @@ class MainWindow(QMainWindow):
     def connect_signals(self):
         """连接信号和槽"""
         self.btnAudioClone.clicked.connect(self.show_audio_clone)
+        self.btnModelDownload.clicked.connect(self.show_model_download)
 
     def show_audio_clone(self):
         """显示音频克隆页面"""
@@ -53,3 +54,28 @@ class MainWindow(QMainWindow):
 
         except Exception as e:
             QMessageBox.critical(self, "错误", f"加载音频克隆面板失败：{str(e)}")
+
+    def show_model_download(self):
+        """显示模型下载页面"""
+        try:
+            from ui.model_download_controller import ModelDownloadController
+            # 如果还没加载模型下载面板
+            if self.modelDownloadPlaceholder.isVisible():
+                # 清空占位符布局
+                layout = self.modelDownloadPage.layout()
+                while layout.count():
+                    item = layout.takeAt(0)
+                    widget = item.widget()
+                    if widget:
+                        widget.setParent(None)
+
+                # 创建模型下载面板
+                self.model_download_panel = ModelDownloadController()
+                layout.addWidget(self.model_download_panel)
+
+            # 切换到模型下载页面
+            self.stackedWidget.setCurrentIndex(2)
+            self.statusBar().showMessage("模型下载", 3000)
+
+        except Exception as e:
+            QMessageBox.critical(self, "错误", f"加载模型下载面板失败：{str(e)}")

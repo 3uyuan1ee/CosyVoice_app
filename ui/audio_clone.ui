@@ -70,7 +70,7 @@ QTextEdit {
     color: #c4a77d;
     border: 2px solid #2a1d19;
     border-radius: 0px;
-    padding: 10px;
+    padding: 10px 12px 10px 12px;
     font-size: 11px;
     line-height: 1.4;
     selection-background-color: #3d2b25;
@@ -148,19 +148,19 @@ QProgressBar::chunk {
      </property>
      <layout class="QVBoxLayout" name="contentLayout">
       <property name="spacing">
-       <number>32</number>
+       <number>12</number>
       </property>
       <property name="leftMargin">
-       <number>48</number>
+       <number>32</number>
       </property>
       <property name="topMargin">
-       <number>40</number>
+       <number>20</number>
       </property>
       <property name="rightMargin">
-       <number>48</number>
+       <number>32</number>
       </property>
       <property name="bottomMargin">
-       <number>40</number>
+       <number>20</number>
       </property>
       <item>
        <widget class="QLabel" name="titleLabel">
@@ -181,21 +181,30 @@ QProgressBar::chunk {
         <property name="title">
          <string>REFERENCE AUDIO</string>
         </property>
+        <property name="minimumHeight">
+         <number>80</number>
+        </property>
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Preferred" vsizetype="Minimum">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
         <layout class="QVBoxLayout" name="referenceLayout">
          <property name="spacing">
-          <number>12</number>
+          <number>8</number>
          </property>
          <property name="leftMargin">
           <number>0</number>
          </property>
          <property name="topMargin">
-          <number>20</number>
+          <number>10</number>
          </property>
          <property name="rightMargin">
           <number>0</number>
          </property>
          <property name="bottomMargin">
-          <number>0</number>
+          <number>10</number>
          </property>
          <item>
           <layout class="QHBoxLayout" name="refAudioLayout">
@@ -254,6 +263,15 @@ QPushButton:pressed {
         <property name="title">
          <string>TEXT TO SYNTHESIZE</string>
         </property>
+        <property name="minimumHeight">
+         <number>120</number>
+        </property>
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Preferred" vsizetype="Minimum">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
         <layout class="QVBoxLayout" name="textLayout">
          <property name="spacing">
           <number>0</number>
@@ -262,13 +280,13 @@ QPushButton:pressed {
           <number>0</number>
          </property>
          <property name="topMargin">
-          <number>20</number>
+          <number>10</number>
          </property>
          <property name="rightMargin">
           <number>0</number>
          </property>
          <property name="bottomMargin">
-          <number>0</number>
+          <number>10</number>
          </property>
          <item>
           <widget class="QTextEdit" name="textInput">
@@ -288,26 +306,29 @@ QPushButton:pressed {
         <property name="title">
          <string>PITCH ADJUSTMENT</string>
         </property>
+        <property name="minimumHeight">
+         <number>60</number>
+        </property>
         <layout class="QVBoxLayout" name="optionsLayout">
          <property name="spacing">
-          <number>16</number>
+          <number>8</number>
          </property>
          <property name="leftMargin">
           <number>0</number>
          </property>
          <property name="topMargin">
-          <number>20</number>
+          <number>10</number>
          </property>
          <property name="rightMargin">
           <number>0</number>
          </property>
          <property name="bottomMargin">
-          <number>0</number>
+          <number>10</number>
          </property>
          <item>
           <layout class="QHBoxLayout" name="pitchLayout">
            <property name="spacing">
-            <number>16</number>
+            <number>8</number>
            </property>
            <item>
             <widget class="QLabel" name="pitchLabel">

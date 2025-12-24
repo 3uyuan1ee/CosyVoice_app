@@ -46,7 +46,7 @@ def setup_logging():
 
     path_manager = PathManager()
     log_dir = path_manager.get_log_path()
-    log_file = log_dir / "cosyvoice_app.log"
+    log_file = Path(log_dir) / "cosyvoice_app.log"
 
     # 移除默认处理器
     logger.remove()

@@ -153,9 +153,6 @@ QWidget {
            <property name="text">
             <string>AUDIO CLONE</string>
            </property>
-           <property name="cursor">
-            <cursor>PointingHandCursor</cursor>
-           </property>
            <property name="styleSheet">
             <string notr="true">QPushButton {
     background: #1a1412;
@@ -199,9 +196,6 @@ QPushButton:pressed {
            </property>
            <property name="text">
             <string>MODEL DOWNLOAD</string>
-           </property>
-           <property name="cursor">
-            <cursor>PointingHandCursor</cursor>
            </property>
            <property name="styleSheet">
             <string notr="true">QPushButton {

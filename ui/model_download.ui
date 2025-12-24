@@ -208,9 +208,6 @@ QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {
           <property name="text">
            <string>DOWNLOAD ALL</string>
           </property>
-          <property name="cursor">
-           <cursor>PointingHandCursor</cursor>
-          </property>
           <property name="styleSheet">
            <string notr="true">QPushButton {
     background: #3d2b25;
@@ -254,9 +251,6 @@ QPushButton:disabled {
           </property>
           <property name="text">
            <string>REFRESH</string>
-          </property>
-          <property name="cursor">
-           <cursor>PointingHandCursor</cursor>
           </property>
           <property name="styleSheet">
            <string notr="true">QPushButton {

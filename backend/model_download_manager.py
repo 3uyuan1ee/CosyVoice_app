@@ -50,6 +50,11 @@ class ModelVerificationError(ModelDownloadError):
     pass
 
 
+class DownloadCancelledError(ModelDownloadError):
+    """下载取消异常"""
+    pass
+
+
 class DependencyInstallationError(ModelDownloadError):
     """依赖安装异常"""
     pass
@@ -195,6 +200,10 @@ class ModelDownloadManager(LoggerMixin):
         self._download_futures = {}
         self._progress_callbacks = {}
         self._load_model_status()
+
+        # 取消控制
+        self._cancel_flags = {}  # model_type -> bool
+        self._download_processes = {}  # model_type -> subprocess.Popen
 
         # 预定义模型信息
         self._model_registry = self._initialize_model_registry()
@@ -487,6 +496,14 @@ class ModelDownloadManager(LoggerMixin):
             bool: 下载是否成功
         """
         try:
+            # 检查是否已取消
+            with self._lock:
+                if self._cancel_flags.get(model_type, False):
+                    self.logger.info(f"下载已取消: {model_type.value}")
+                    # 清除取消标志
+                    self._cancel_flags[model_type] = False
+                    raise DownloadCancelledError(f"Download cancelled for {model_type.value}")
+
             if model_type not in self._model_registry:
                 raise ValueError(f"不支持的模型类型: {model_type}")
 
@@ -719,6 +736,46 @@ class ModelDownloadManager(LoggerMixin):
             "download_progress": downloaded_models / total_models if total_models > 0 else 0,
             "models_status": self._model_status
         }
+
+    def cancel_download(self, model_type: ModelType) -> bool:
+        """
+        取消指定模型的下载
+
+        Args:
+            model_type: 要取消的模型类型
+
+        Returns:
+            bool: 是否成功取消
+        """
+        with self._lock:
+            # 设置取消标志
+            self._cancel_flags[model_type] = True
+            self.logger.info(f"设置取消标志: {model_type.value}")
+
+            # 如果有正在运行的进程，终止它
+            if model_type in self._download_processes:
+                process = self._download_processes[model_type]
+                try:
+                    # 先尝试优雅终止
+                    process.terminate()
+                    try:
+                        process.wait(timeout=5)
+                    except subprocess.TimeoutExpired:
+                        # 如果5秒后还没终止，强制杀死
+                        self.logger.warning(f"进程未响应terminate，使用kill: {model_type.value}")
+                        process.kill()
+                        process.wait(timeout=2)
+
+                    del self._download_processes[model_type]
+                    self.logger.info(f"已取消下载: {model_type.value}")
+                    return True
+                except Exception as e:
+                    self.logger.error(f"取消下载失败: {e}")
+                    return False
+            else:
+                self.logger.warning(f"没有找到正在运行的下载进程: {model_type.value}")
+                # 即使没有进程，也设置了取消标志
+                return True
 
 
 # ==================== 便捷函数 ====================

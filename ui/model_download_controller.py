@@ -10,9 +10,9 @@ from loguru import logger
 from typing import Dict, Optional
 
 from ui.model_card_widget import ModelCardWidget, ModelStatus
-from ui.download_worker import ModelDownloadWorker
 from backend.model_download_service import get_model_download_service, ModelInfo
 from backend.path_manager import PathManager
+from backend.model_download_manager import ModelDownloadManager
 
 
 class ModelDownloadController(QWidget):
@@ -30,17 +30,23 @@ class ModelDownloadController(QWidget):
         self.download_service = get_model_download_service()
         self.path_manager = PathManager()
 
-        # 初始化服务
+        # 创建并注入下载管理器
+        self.download_manager = ModelDownloadManager()
+        self.download_service.set_download_manager(self.download_manager)
         self.download_service.set_path_manager(self.path_manager)
 
-        # 存储模型卡片和下载任务
+        # 存储模型卡片
         self.model_cards: Dict[str, ModelCardWidget] = {}
-        self.download_workers: Dict[str, ModelDownloadWorker] = {}
 
         # 初始化UI
         self._init_ui()
         self._load_models()
         self._connect_signals()
+
+        # 连接服务层信号
+        self.download_service.download_progress.connect(self._on_download_progress)
+        self.download_service.download_finished.connect(self._on_download_finished)
+        self.download_service.download_status_update.connect(self._on_download_status_update)
 
     def _init_ui(self):
         """初始化UI"""
@@ -103,12 +109,6 @@ class ModelDownloadController(QWidget):
 
     def _clear_model_cards(self):
         """清空模型卡片"""
-        # 停止所有下载任务
-        for worker in self.download_workers.values():
-            worker.stop()
-            worker.wait()
-        self.download_workers.clear()
-
         # 清空布局
         layout = self.modelsContainer.layout()
         while layout.count():
@@ -141,32 +141,14 @@ class ModelDownloadController(QWidget):
         try:
             logger.info(f"Download requested for model: {model_id}")
 
-            # 检查是否已在下载
-            if model_id in self.download_workers:
-                logger.warning(f"Download already in progress for: {model_id}")
+            # 通过服务层启动下载
+            success = self.download_service.start_download(model_id)
+
+            if not success:
+                logger.warning(f"Failed to start download for: {model_id}")
+                self._show_error_message("Download failed to start",
+                                        "Download may already be in progress or service not ready")
                 return
-
-            # 获取模型信息
-            model_info = self.download_service.get_model_info(model_id)
-            if not model_info:
-                raise ValueError(f"Model not found: {model_id}")
-
-            # 创建下载工作线程
-            worker = ModelDownloadWorker(
-                model_id=model_id,
-                model_name=model_info.name,
-                download_manager=None,  # TODO: 传入实际的下载管理器
-                parent=self
-            )
-
-            # 连接信号
-            worker.signals.progress.connect(self._on_download_progress)
-            worker.signals.finished.connect(self._on_download_finished)
-            worker.signals.status_update.connect(self._on_download_status_update)
-
-            # 启动下载
-            self.download_workers[model_id] = worker
-            worker.start()
 
             # 更新UI状态
             card = self.model_cards.get(model_id)
@@ -185,18 +167,18 @@ class ModelDownloadController(QWidget):
         try:
             logger.info(f"Cancelling download for: {model_id}")
 
-            worker = self.download_workers.get(model_id)
-            if worker:
-                worker.cancel()
-                worker.wait()
-                del self.download_workers[model_id]
+            # 通过服务层取消下载
+            success = self.download_service.cancel_download(model_id)
 
-            # 更新UI状态
-            card = self.model_cards.get(model_id)
-            if card:
-                card.update_status(ModelStatus.NOT_DOWNLOADED)
+            if success:
+                # 更新UI状态
+                card = self.model_cards.get(model_id)
+                if card:
+                    card.update_status(ModelStatus.NOT_DOWNLOADED)
 
-            logger.info(f"Download cancelled for: {model_id}")
+                logger.info(f"Download cancelled for: {model_id}")
+            else:
+                logger.warning(f"Failed to cancel download for: {model_id}")
 
         except Exception as e:
             logger.error(f"Error cancelling download for {model_id}: {e}")
@@ -212,10 +194,6 @@ class ModelDownloadController(QWidget):
     def _on_download_finished(self, model_id: str, success: bool, error_msg: str):
         """处理下载完成"""
         try:
-            # 清理工作线程
-            if model_id in self.download_workers:
-                del self.download_workers[model_id]
-
             # 更新UI状态
             card = self.model_cards.get(model_id)
             if card:
@@ -292,9 +270,4 @@ class ModelDownloadController(QWidget):
         """清理资源"""
         logger.info("Cleaning up model download controller")
 
-        # 停止所有下载任务
-        for worker in self.download_workers.values():
-            worker.stop()
-            worker.wait()
-
-        self.download_workers.clear()
+        # 下载任务由服务层管理，不需要在这里清理

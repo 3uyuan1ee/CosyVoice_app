@@ -13,7 +13,7 @@ from typing import Optional
 from ui.audio_generation_worker import AudioGenerationWorker
 from backend.file_service import get_file_service
 from backend.path_manager import PathManager
-from backend.model_download_service import get_model_download_service
+from backend.model_download_service import get_model_download_service, ModelDownloadStatus
 
 
 class AudioClonePanel(QWidget):
@@ -69,7 +69,7 @@ class AudioClonePanel(QWidget):
             # 默认选择第一个已下载的模型
             for i, model in enumerate(available_models):
                 status = self.model_download_service.check_model_status(model.id)
-                if status == self.model_download_service.ModelDownloadStatus.DOWNLOADED:
+                if status == ModelDownloadStatus.DOWNLOADED:
                     self.modelComboBox.setCurrentIndex(i)
                     self.selected_model_id = model.id
                     logger.info(f"Selected default model: {model.name}")

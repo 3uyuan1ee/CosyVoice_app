@@ -837,10 +837,11 @@ class CosyService(LoggerMixin):
                 if model_dir is None:
                     model_dir = self.path_manager.get_cosyvoice3_2512_model_path()
 
-                # 检查模型是否存在，如果不存在则尝试自动下载
+                # 检查模型是否存在，如果不存在则提示用户下载
                 if not os.path.exists(model_dir):
-                    self.logger.info("[CosyService] 模型目录不存在，尝试自动下载...")
-                    self._auto_download_required_models()
+                    self.logger.warning("[CosyService] 模型目录不存在，请先在模型下载页面下载所需模型")
+                    # 自动下载已禁用，用户需要通过模型下载页面手动下载
+                    # self._auto_download_required_models()
 
                 # 初始化模型相关模块
                 if os.path.exists(model_dir):
@@ -860,18 +861,15 @@ class CosyService(LoggerMixin):
 
                         if not is_complete:
                             self.logger.error(f"[CosyService] 模型不完整，缺失 {len(missing_files)} 个文件")
-                            self.logger.error("[CosyService] 将尝试自动重新下载模型...")
-
-                            # 尝试重新下载
-                            try:
-                                self._auto_download_required_models()
-
-                                # 下载后重新检查
-                                is_complete_after, _, _ = self.path_manager.check_cosyvoice3_model_integrity(model_dir)
-
-                                if is_complete_after:
-                                    self.logger.info("[CosyService] 模型下载完成，重新加载...")
-                                    self.model_manager = ModelManager(
+                            self.logger.error("[CosyService] 请在模型下载页面重新下载模型")
+                            # 自动重新下载已禁用
+                            # try:
+                            #     self._auto_download_required_models()
+                            #     # 下载后重新检查
+                            #     is_complete_after, _, _ = self.path_manager.check_cosyvoice3_model_integrity(model_dir)
+                            #     if is_complete_after:
+                            #         self.logger.info("[CosyService] 模型下载完成，重新加载...")
+                            #         self.model_manager = ModelManager(
                                         model_dir, self.device_manager,
                                         load_vllm=load_vllm,
                                         load_jit=load_jit,

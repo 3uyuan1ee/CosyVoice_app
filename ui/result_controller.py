@@ -85,7 +85,8 @@ class ResultPanel(QWidget):
     def _load_existing_files(self):
         """加载输出目录中已存在的文件"""
         try:
-            output_dir = self.path_manager.get_output_path()
+            # 使用生成的音频路径
+            output_dir = self.path_manager.get_res_voice_path()
 
             if not os.path.exists(output_dir):
                 logger.info(f"Output directory does not exist: {output_dir}")

@@ -265,3 +265,33 @@ class PathManager:
             "cosyvoice_dir": self.get_cosyvoice_path(),
             "voices_dir": self.get_voices_path(),
         }
+
+    # ==================== 应用数据路径 ====================
+
+    def get_app_data_path(self, *path_parts):
+        """获取应用数据目录路径"""
+        return self.get_root_begin_path("data", *path_parts)
+
+    def get_log_path(self):
+        """获取日志目录路径 (data/logs/)"""
+        log_path = self.get_app_data_path("logs")
+        self.ensure_directory(log_path)
+        return log_path
+
+    def get_config_path(self):
+        """获取配置目录路径 (data/config/)"""
+        config_path = self.get_app_data_path("config")
+        self.ensure_directory(config_path)
+        return config_path
+
+    def get_temp_path(self, *path_parts):
+        """获取临时目录路径 (data/temp/)"""
+        temp_path = self.get_app_data_path("temp", *path_parts)
+        self.ensure_directory(temp_path)
+        return temp_path
+
+    def get_cache_path(self, *path_parts):
+        """获取缓存目录路径 (data/cache/)"""
+        cache_path = self.get_app_data_path("cache", *path_parts)
+        self.ensure_directory(cache_path)
+        return cache_path

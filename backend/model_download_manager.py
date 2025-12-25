@@ -348,11 +348,37 @@ class ModelDownloadManager(LoggerMixin):
             self.logger.info(f"模型ID: {model_info.modelscope_id}")
             self.logger.info(f"目标路径: {local_path}")
 
-            # 执行下载
-            result = modelscope.snapshot_download(
-                model_info.modelscope_id,
-                local_dir=local_path
+            # 创建进度跟踪
+            progress = DownloadProgress(
+                model_type=model_info.model_type,
+                status=DownloadStatus.DOWNLOADING,
+                start_time=time.time()
             )
+
+            # 定义进度回调
+            def progress_hook(current: int, total: int):
+                """ModelScope下载进度回调"""
+                if total > 0:
+                    progress.progress = current / total
+                    progress.downloaded_size = current
+                    progress.total_size = total
+                    self._update_progress(progress)
+
+            # 执行下载（带进度回调）
+            try:
+                # ModelScope的snapshot_download支持progress_callback参数
+                result = modelscope.snapshot_download(
+                    model_info.modelscope_id,
+                    local_dir=local_path,
+                    progress_callback=progress_hook
+                )
+            except TypeError:
+                # 如果ModelScope版本不支持progress_callback，回退到不带回调的方式
+                self.logger.warning("当前ModelScope版本不支持进度回调，使用基本下载模式")
+                result = modelscope.snapshot_download(
+                    model_info.modelscope_id,
+                    local_dir=local_path
+                )
 
             # 验证下载结果
             if self._is_model_complete(local_path, model_info):
@@ -431,7 +457,7 @@ class ModelDownloadManager(LoggerMixin):
                 "campplus.onnx",         # 说话人编码器
                 "speech_tokenizer_v3.onnx"  # 语音 tokenizer
             ]
-        elif model_type in [ModelType.COSYVOICE2_05B, ModelType.COSYVOICE_300M,
+        elif model_type in [ModelType.COSYVOICE2, ModelType.COSYVOICE_300M,
                             ModelType.COSYVOICE_300M_SFT, ModelType.COSYVOICE_300M_INSTRUCT]:
             # CosyVoice/CosyVoice2 模型文件
             required_files = [

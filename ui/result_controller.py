@@ -5,7 +5,6 @@
 from PyQt6.QtWidgets import (QWidget, QFileDialog, QMessageBox, QListWidgetItem)
 from PyQt6.QtCore import pyqtSlot, Qt
 from PyQt6.uic import loadUi
-from PyQt6.QtGui import QIcon
 import os
 from loguru import logger
 from typing import Optional, List

@@ -44,6 +44,7 @@ class ResultPanel(QWidget):
         loadUi(ui_path, self)
 
         # 服务层
+        # 使用单例获取音频播放器服务
         self.audio_player = get_audio_player_service()
         self.file_service = get_file_service()
         self.path_manager = PathManager()

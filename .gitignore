@@ -6,3 +6,7 @@ SyncTalk/SyncTalk/
 .dev/
 static/voices/ref_voices
 static/voices/res_voices
+/modelscope_cache/
+/CosyVoice_app.pro.user
+/data/logs/cosyvoice_app.log
+/data/config/config.yaml

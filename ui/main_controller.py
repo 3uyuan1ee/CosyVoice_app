@@ -31,8 +31,8 @@ class MainWindow(QMainWindow):
 
     def init_ui(self):
         """初始化界面"""
-        self.setWindowTitle("CosyVoice_app - 语音合成系统")
-        self.statusBar().showMessage("就绪", 3000)
+        self.setWindowTitle("CosyVoice_app")
+        self.statusBar().showMessage("Ready", 3000)
 
     def connect_signals(self):
         """连接信号和槽"""
@@ -64,10 +64,10 @@ class MainWindow(QMainWindow):
 
             # 切换到音频克隆页面
             self.stackedWidget.setCurrentIndex(1)
-            self.statusBar().showMessage("音频克隆功能", 3000)
+            self.statusBar().showMessage("Audio_Clone", 3000)
 
         except Exception as e:
-            MessageBoxHelper.critical(self, "错误", f"加载音频克隆面板失败：{str(e)}")
+            MessageBoxHelper.critical(self, "Error", f"Fail to load clone interface：{str(e)}")
 
     def _on_audio_generated(self, file_path: str, model_id: str, text: str):
         """音频生成完成时的处理"""
@@ -91,7 +91,7 @@ class MainWindow(QMainWindow):
             self.result_panel.add_generated_file(file_path, model_id, text)
 
             # 显示提示消息
-            self.statusBar().showMessage("音频生成完成！已添加到结果页面", 5000)
+            self.statusBar().showMessage("Check cloned audio in result interface", 5000)
 
         except Exception as e:
             logger.error(f"Error handling audio generation: {e}")
@@ -116,10 +116,10 @@ class MainWindow(QMainWindow):
 
             # 切换到结果页面
             self.stackedWidget.setCurrentIndex(3)
-            self.statusBar().showMessage("生成结果", 3000)
+            self.statusBar().showMessage("Result interface", 3000)
 
         except Exception as e:
-            MessageBoxHelper.critical(self, "错误", f"加载结果面板失败：{str(e)}")
+            MessageBoxHelper.critical(self, "Error", f"Fail to load result interface：{str(e)}")
 
     def show_model_download(self):
         """显示模型下载页面"""
@@ -141,7 +141,7 @@ class MainWindow(QMainWindow):
 
             # 切换到模型下载页面
             self.stackedWidget.setCurrentIndex(2)
-            self.statusBar().showMessage("模型下载", 3000)
+            self.statusBar().showMessage("Model download", 3000)
 
         except Exception as e:
-            MessageBoxHelper.critical(self, "错误", f"加载模型下载面板失败：{str(e)}")
+            MessageBoxHelper.critical(self, "Error", f"Fail to load download interface：{str(e)}")

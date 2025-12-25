@@ -109,7 +109,7 @@ def perform_startup_checks():
         if app:
             msg = "启动检查失败，请检查以下问题:\n\n"
             for error in errors:
-                msg += f"❌ {error.message}\n"
+                msg += f"{error.message}\n"
                 if error.recovery_hint:
                     msg += f"   {error.recovery_hint}\n"
 
@@ -117,7 +117,7 @@ def perform_startup_checks():
 
         sys.exit(1)
 
-    logger.info("✅ 启动检查通过")
+    logger.info("启动检查通过")
 
 
 # ==================== 优雅退出 ====================
@@ -283,9 +283,6 @@ def main():
         logger.info("=" * 60)
         logger.info("CosyVoice_app 启动完成!")
         logger.info("=" * 60)
-        logger.info("功能:")
-        logger.info("  🎤 音频克隆 - 使用参考音频克隆声音")
-        logger.info("  📥 模型下载 - 下载CosyVoice模型")
         logger.info("=" * 60)
 
         # 11. 进入事件循环

@@ -95,48 +95,48 @@ class ModelDownloadService(QObject):
         logger.info("ModelDownloadService initialized")
 
     def _init_available_models(self) -> List[ModelInfo]:
-        """初始化可用模型列表"""
+        """初始化可用模型列表（基于官方CosyVoice文档）"""
         return [
             ModelInfo(
                 id="cosyvoice3_2512",
-                name="CosyVoice3-0.5B-2512",
-                size="~1.2GB",
-                description="Latest CosyVoice3 model with 2.5kHz sampling rate. Best quality, recommended for most use cases.",
-                model_type="cosyvoice3"
+                name="Fun-CosyVoice3-0.5B-2512",
+                size="~2.5GB",
+                description="[RECOMMENDED] Latest: Supports 9 languages + 18+ Chinese dialects, zero-shot voice cloning, low-latency streaming (150ms), instruction control (language/dialect/emotion/speed/volume).",
+                model_type="cosyvoice"
             ),
             ModelInfo(
                 id="cosyvoice2",
                 name="CosyVoice2-0.5B",
-                size="~980MB",
-                description="CosyVoice2 model with balanced performance and speed.",
-                model_type="cosyvoice2"
+                size="~1.0GB",
+                description="CosyVoice 2.0: Streaming synthesis, zero-shot/cross-lingual cloning, fine-grained control, supports vLLM inference engine.",
+                model_type="cosyvoice"
             ),
             ModelInfo(
                 id="cosyvoice_300m",
                 name="CosyVoice-300M",
                 size="~600MB",
-                description="Lightweight CosyVoice model, faster inference with good quality.",
+                description="CosyVoice 1.0 base model: Supports SFT inference mode, zero-shot voice cloning, voice conversion.",
                 model_type="cosyvoice"
             ),
             ModelInfo(
                 id="cosyvoice_300m_sft",
                 name="CosyVoice-300M-SFT",
-                size="~620MB",
-                description="Fine-tuned 300M model for specific speaking styles.",
+                size="~600MB",
+                description="CosyVoice 1.0 SFT version: Optimized for standard TTS tasks, uses inference_sft method.",
                 model_type="cosyvoice"
             ),
             ModelInfo(
                 id="cosyvoice_300m_instruct",
                 name="CosyVoice-300M-Instruct",
-                size="~620MB",
-                description="Instruction-tuned model for precise control over voice characteristics.",
+                size="~600MB",
+                description="CosyVoice 1.0 instruct model: Supports emotion, speed control tags (e.g., <laughter></laughter>, <strong></strong>).",
                 model_type="cosyvoice"
             ),
             ModelInfo(
                 id="cosyvoice_ttsfrd",
                 name="CosyVoice-TTSFRD",
                 size="~550MB",
-                description="Fast response model optimized for real-time applications.",
+                description="[OPTIONAL] Text frontend resource: Better text normalization, Chinese pinyin and English phoneme correction. Uses WeTextProcessing if not installed.",
                 model_type="cosyvoice"
             ),
         ]

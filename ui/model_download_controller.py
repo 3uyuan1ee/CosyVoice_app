@@ -70,6 +70,12 @@ class ModelDownloadController(QWidget):
             # 在最后添加弹性空间，确保滚动能到底部
             container_layout = self.modelsContainer.layout()
             if container_layout:
+                # 添加一个额外的固定高度空白区域，确保最底部的模型完全可见
+                from PyQt6.QtWidgets import QWidget
+                bottom_spacer = QWidget()
+                bottom_spacer.setMinimumHeight(100)  # 100像素的额外底部空白
+                container_layout.addWidget(bottom_spacer)
+                # 添加弹性空间
                 container_layout.addStretch()
 
             logger.info(f"Loaded {len(models)} models")

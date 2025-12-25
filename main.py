@@ -1,13 +1,6 @@
 #!/usr/bin/env python3
 """
 CosyVoice_app - PyQt6 主程序入口
-
-完整功能:
-- 启动检查
-- 日志配置
-- 错误处理
-- 优雅退出
-- 性能监控
 """
 
 import sys
@@ -243,6 +236,29 @@ def main():
         application.setApplicationVersion("1.0.0")
         application.setOrganizationName("CosyVoice")
 
+        # 设置应用图标（跨平台）
+        from PyQt6.QtGui import QIcon
+
+        icon_path = None
+        if sys.platform == 'darwin':  # macOS
+            # macOS优先使用icns格式（系统原生格式，无边框效果）
+            icon_path = PROJECT_ROOT / "resources" / "icons" / "app_icon.icns"
+            if not icon_path.exists():
+                icon_path = PROJECT_ROOT / "resources" / "icons" / "app_icon.png"
+        elif sys.platform == 'win32':  # Windows
+            # Windows优先使用ico格式
+            icon_path = PROJECT_ROOT / "resources" / "icons" / "app_icon.ico"
+            if not icon_path.exists():
+                icon_path = PROJECT_ROOT / "resources" / "icons" / "app_icon.png"
+        else:  # Linux和其他平台
+            icon_path = PROJECT_ROOT / "resources" / "icons" / "app_icon.png"
+
+        if icon_path.exists():
+            application.setWindowIcon(QIcon(str(icon_path)))
+            logger.info(f"应用图标已设置: {icon_path} (平台: {sys.platform})")
+        else:
+            logger.warning(f"应用图标不存在: {icon_path}")
+
         # 设置应用样式
         application.setStyle("Fusion")
 
@@ -268,11 +284,24 @@ def main():
         # 设置错误处理器的父窗口
         error_handler.set_parent_widget(main_window)
 
-        # 9. 显示主窗口
-        logger.info("显示主窗口...")
-        main_window.show()
-        main_window.raise_()  # 将窗口提升到前台
-        main_window.activateWindow()  # 激活窗口
+        # 9. 显示启动页面
+        logger.info("显示启动页面...")
+        from ui.splash_controller import SplashScreen
+        splash = SplashScreen()
+
+        # 当启动页面完成时，显示主窗口
+        splash.finished.connect(
+            lambda: (
+                logger.info("启动页面完成，显示主窗口..."),
+                main_window.show(),
+                main_window.raise_(),
+                main_window.activateWindow(),
+                logger.info("主窗口已显示")
+            )
+        )
+
+        # 启动倒计时
+        splash.start()
 
         # 记录应用启动
         try:

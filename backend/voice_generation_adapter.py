@@ -1,12 +1,5 @@
 """
 语音生成适配器 - 统一后端接口
-
-设计模式:
-- 适配器模式: 将CV_clone的接口适配到UI层需要的格式
-- 策略模式: 支持不同的生成策略
-- 依赖注入: 通过工厂方法注入依赖
-
-架构:
 VoiceGenerationAdapter (适配器)
     ├── CVCloneAdapter (CosyVoice适配器)
     └── MockAdapter (模拟适配器,用于测试)

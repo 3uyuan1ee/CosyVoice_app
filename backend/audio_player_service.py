@@ -6,7 +6,7 @@
 
 from typing import Optional
 from PyQt6.QtMultimedia import QMediaPlayer, QAudioOutput
-from PyQt6.QtCore import QUrl, QObject, pyqtSignal
+from PyQt6.QtCore import QUrl, QObject, pyqtSignal, QCoreApplication
 from loguru import logger
 import os
 
@@ -19,7 +19,7 @@ class PlayerSignals(QObject):
     error_occurred = pyqtSignal(str)  # 播放错误
 
 
-class AudioPlayerService:
+class AudioPlayerService(QObject):
     """
     音频播放服务
 
@@ -34,23 +34,31 @@ class AudioPlayerService:
 
     def __new__(cls, *args, **kwargs):
         if cls._instance is None:
+            # 创建实例时，不需要传递parent参数
+            # QObject单例不应该有parent，以避免父子对象生命周期冲突
             cls._instance = super().__new__(cls)
+            cls._instance._initialized = False
         return cls._instance
 
-    def __init__(self):
-        # 避免重复初始化
-        if hasattr(self, '_initialized'):
+    def __init__(self, parent=None):
+        # 避免重复初始化 - 必须在super().__init__之前检查
+        if self._initialized:
             return
 
+        # 先调用父类初始化（QObject需要）
+        # 单例模式不使用parent，以避免生命周期冲突
+        super().__init__(parent=None)
+
+        # 标记已初始化
         self._initialized = True
 
-        # 创建播放器组件
-        self.media_player = QMediaPlayer()
-        self.audio_output = QAudioOutput()
+        # 创建播放器组件，设置父对象防止被垃圾回收
+        self.media_player = QMediaPlayer(self)
+        self.audio_output = QAudioOutput(self)
         self.media_player.setAudioOutput(self.audio_output)
 
-        # 创建信号对象
-        self.signals = PlayerSignals()
+        # 创建信号对象，设置父对象防止被垃圾回收
+        self.signals = PlayerSignals(self)
 
         # 当前状态
         self._current_file: Optional[str] = None

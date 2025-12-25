@@ -2,10 +2,11 @@
 异步下载工作线程 - 在后台线程执行模型下载任务
 """
 
-from PyQt6.QtCore import QThread, pyqtSignal, QObject, QTimer
+from PyQt6.QtCore import QThread, pyqtSignal, QObject
 from typing import Optional
 from loguru import logger
 import time
+import random
 
 
 class DownloadSignals(QObject):
@@ -33,10 +34,9 @@ class ModelDownloadWorker(QThread):
         self._is_cancelled = False
         self._download_error = None  # 存储下载错误信息
 
-        # 模拟进度条
-        self._fake_progress_timer = None
+        # 模拟进度
         self._current_fake_progress = 0
-        self._fake_progress_step = 2  # 每次增加2%
+        self._last_fake_update_time = 0
 
     def run(self):
         """执行下载任务"""
@@ -45,26 +45,10 @@ class ModelDownloadWorker(QThread):
 
             # 发送开始状态
             self.signals.status_update.emit(self.model_id, "Initializing download...")
+            self._current_fake_progress = 0
+            self._last_fake_update_time = time.time()
 
-            # 启动模拟进度定时器
-            self._start_fake_progress()
-
-            # 创建进度回调函数（用于实际进度，如果有的话）
-            def progress_callback(current: int, total: int, model_id: str = None):
-                if not self._is_running or self._is_cancelled:
-                    return False  # 取消下载
-
-                # 如果收到真实进度，更新模拟进度
-                if total > 0:
-                    real_percentage = int((current / total) * 100)
-                    # 确保真实进度不低于模拟进度
-                    if real_percentage > self._current_fake_progress:
-                        self._current_fake_progress = real_percentage
-                    self._update_fake_progress(real_percentage)
-                return True  # 继续下载
-
-            # 执行下载（这里需要适配实际的下载管理器接口）
-            # 注意：需要根据后端实际接口调整
+            # 执行下载
             from backend.model_download_manager import ModelType, DownloadSource
 
             # 映射model_id到ModelType枚举
@@ -82,12 +66,7 @@ class ModelDownloadWorker(QThread):
                 raise ValueError(f"Unknown model type: {self.model_id}")
 
             # 使用下载管理器下载模型
-            success = self._download_with_progress(
-                model_type, progress_callback
-            )
-
-            # 停止模拟进度
-            self._stop_fake_progress()
+            success = self._download_with_progress(model_type)
 
             # 根据结果发送信号
             if success:
@@ -107,31 +86,60 @@ class ModelDownloadWorker(QThread):
                     logger.error(f"Download failed for {self.model_name}: {error_msg}")
 
         except Exception as e:
-            self._stop_fake_progress()
             logger.error(f"Download error for {self.model_name}: {str(e)}")
             self.signals.finished.emit(self.model_id, False, str(e))
             self.signals.status_update.emit(self.model_id, f"Error: {str(e)}")
 
-    def _start_fake_progress(self):
-        """启动模拟进度定时器"""
-        self._current_fake_progress = 0
-        self._fake_progress_timer = QTimer()
-        self._fake_progress_timer.timeout.connect(self._update_fake_progress_step)
-        self._fake_progress_timer.start(500)  # 每500毫秒更新一次
-        logger.info("Started fake progress timer")
+    def _update_fake_progress(self):
+        """更新模拟进度 - 4分钟达到90%，带随机波动"""
+        if self._current_fake_progress >= 90:
+            return
 
-    def _stop_fake_progress(self):
-        """停止模拟进度定时器"""
-        if self._fake_progress_timer:
-            self._fake_progress_timer.stop()
-            self._fake_progress_timer = None
-            logger.info("Stopped fake progress timer")
+        current_time = time.time()
+        # 每500ms更新一次
+        if current_time - self._last_fake_update_time >= 0.5:
+            # 目标：4分钟(240秒)达到90%
+            # 平均每秒需要增加：90% / 240秒 = 0.375%
+            # 每0.5秒平均增加：0.1875%
 
-    def _update_fake_progress_step(self):
-        """定时器回调：更新模拟进度"""
-        if self._current_fake_progress < 90:
-            # 每次增加2%，最多到90%（预留10%给最后的验证步骤）
-            self._current_fake_progress = min(90, self._current_fake_progress + self._fake_progress_step)
+            # 根据当前进度阶段调整基础增量（越接近完成越慢）
+            base_increment = 0.19  # 基础增量
+
+            if self._current_fake_progress < 20:
+                # 0-20%: 初始阶段，稍快
+                base_increment = 0.22
+            elif self._current_fake_progress < 50:
+                # 20-50%: 中期阶段
+                base_increment = 0.19
+            elif self._current_fake_progress < 80:
+                # 50-80%: 后期阶段，稍慢
+                base_increment = 0.16
+            else:
+                # 80-90%: 接近完成，明显变慢
+                base_increment = 0.12
+
+            # 添加随机波动
+            rand = random.random()
+
+            if rand < 0.70:
+                # 70%概率：正常波动 (0.8x - 1.2x)
+                increment = base_increment * random.uniform(0.8, 1.2)
+            elif rand < 0.90:
+                # 20%概率：网络良好，稍快 (1.2x - 2.0x)
+                increment = base_increment * random.uniform(1.2, 2.0)
+            elif rand < 0.97:
+                # 7%概率：网络拥堵，很慢 (0.2x - 0.6x)
+                increment = base_increment * random.uniform(0.2, 0.6)
+            else:
+                # 3%概率：短暂停滞 (0x - 0.1x)
+                increment = base_increment * random.uniform(0, 0.1)
+
+            # 偶尔出现较大跳跃（模拟下载大文件块）
+            if random.random() < 0.08:  # 8%概率
+                increment += random.uniform(0.3, 0.8)
+
+            # 应用增量
+            self._current_fake_progress = min(90, self._current_fake_progress + increment)
 
             # 计算模拟的当前值和总值（假设最大1GB）
             fake_current = int(self._current_fake_progress * 10 * 1024 * 1024)  # 10MB * percentage
@@ -141,37 +149,20 @@ class ModelDownloadWorker(QThread):
                 self.model_id,
                 fake_current,
                 fake_total,
-                self._current_fake_progress
+                int(self._current_fake_progress)
             )
 
-            logger.debug(f"Fake progress: {self._current_fake_progress}%")
+            self._last_fake_update_time = current_time
+            logger.debug(f"Fake progress: {self._current_fake_progress:.2f}% (+{increment:.3f}%)")
 
-    def _update_fake_progress(self, percentage: int):
-        """更新进度到指定值"""
-        self._current_fake_progress = percentage
-        fake_current = int(percentage * 10 * 1024 * 1024)
-        fake_total = 1024 * 1024 * 1024
-
-        self.signals.progress.emit(
-            self.model_id,
-            fake_current,
-            fake_total,
-            percentage
-        )
-
-    def _download_with_progress(self, model_type, progress_callback) -> bool:
+    def _download_with_progress(self, model_type) -> bool:
         """
-        带进度的下载实现
-
-        使用轮询方式获取下载进度并更新UI
+        带进度的下载实现（使用模拟进度）
         """
         try:
             from backend.model_download_manager import DownloadSource, DownloadCancelledError
 
             self.signals.status_update.emit(self.model_id, "Connecting to server...")
-
-            # 由于model_download_manager的download_model是阻塞的
-            # 我们使用轮询方式来获取进度
 
             # 先启动一个后台线程来执行实际下载
             import threading
@@ -205,24 +196,36 @@ class ModelDownloadWorker(QThread):
             thread = threading.Thread(target=download_thread, daemon=True)
             thread.start()
 
-            # 轮询进度并更新UI（使用模拟进度）
+            # 轮询进度并更新UI
             poll_count = 0
-            max_polls = 1200  # 最多轮询20分钟 (1200次 * 1秒)
+            max_polls = 1200  # 最多轮询20分钟
 
             while not download_complete.is_set() and not self._is_cancelled:
                 poll_count += 1
 
-                # 这里可以尝试获取真实进度，如果没有则使用模拟进度
-                status = self.download_manager.get_download_status(model_type)
+                # 更新模拟进度
+                self._update_fake_progress()
 
+                # 尝试获取真实进度
+                status = self.download_manager.get_download_status(model_type)
                 if status and hasattr(status, 'progress'):
                     real_progress = int(status.progress * 100)
-                    # 如果真实进度大于模拟进度，更新模拟进度
-                    if real_progress > self._current_fake_progress and real_progress < 100:
-                        self._update_fake_progress(real_progress)
+                    # 如果真实进度大于模拟进度，使用真实进度
+                    if real_progress > self._current_fake_progress:
+                        self._current_fake_progress = real_progress
+                        # 立即更新
+                        fake_current = int(real_progress * 10 * 1024 * 1024)
+                        fake_total = 1024 * 1024 * 1024
+                        self.signals.progress.emit(
+                            self.model_id,
+                            fake_current,
+                            fake_total,
+                            real_progress
+                        )
+                        self._last_fake_update_time = time.time()
 
                 # 等待一段时间再轮询
-                download_complete.wait(timeout=1.0)
+                download_complete.wait(timeout=0.5)
 
                 # 超时检查
                 if poll_count >= max_polls:
@@ -242,7 +245,6 @@ class ModelDownloadWorker(QThread):
             # 检查下载结果
             if download_result.get("success"):
                 logger.info(f"Download completed successfully for {model_type.value}")
-                # 即使之前被取消，如果下载成功，也返回成功
                 if user_cancelled:
                     logger.info("Download completed despite user cancellation")
                     self.signals.status_update.emit(self.model_id, "Download completed")
@@ -263,9 +265,6 @@ class ModelDownloadWorker(QThread):
         logger.info(f"Cancelling download for: {self.model_name}")
         self._is_cancelled = True
         self._is_running = False
-
-        # 停止模拟进度
-        self._stop_fake_progress()
 
         # 调用下载管理器的取消方法
         try:
@@ -291,4 +290,3 @@ class ModelDownloadWorker(QThread):
     def stop(self):
         """停止线程"""
         self._is_running = False
-        self._stop_fake_progress()

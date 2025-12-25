@@ -205,7 +205,7 @@ class AudioGenerationWorker(QThread):
                 text=self.text,
                 reference_audio=reference_audio,
                 pitch_shift=self.pitch_shift,
-                output_path="generated",  # 适配器会生成完整路径
+                output_path=None,  # None让适配器自动生成唯一文件名
                 strategy="balanced",
                 enable_preprocessing=False,  # 已经在前期预处理过
                 enable_pitch_shift=True,

@@ -1,7 +1,8 @@
 """
 主窗口控制器
 """
-from PyQt6.QtWidgets import QMainWindow, QMessageBox
+from PyQt6.QtWidgets import QMainWindow
+from ui.message_box_helper import MessageBoxHelper
 from PyQt6.uic import loadUi
 import os
 from loguru import logger
@@ -66,7 +67,7 @@ class MainWindow(QMainWindow):
             self.statusBar().showMessage("音频克隆功能", 3000)
 
         except Exception as e:
-            QMessageBox.critical(self, "错误", f"加载音频克隆面板失败：{str(e)}")
+            MessageBoxHelper.critical(self, "错误", f"加载音频克隆面板失败：{str(e)}")
 
     def _on_audio_generated(self, file_path: str, model_id: str, text: str):
         """音频生成完成时的处理"""
@@ -118,7 +119,7 @@ class MainWindow(QMainWindow):
             self.statusBar().showMessage("生成结果", 3000)
 
         except Exception as e:
-            QMessageBox.critical(self, "错误", f"加载结果面板失败：{str(e)}")
+            MessageBoxHelper.critical(self, "错误", f"加载结果面板失败：{str(e)}")
 
     def show_model_download(self):
         """显示模型下载页面"""
@@ -143,4 +144,4 @@ class MainWindow(QMainWindow):
             self.statusBar().showMessage("模型下载", 3000)
 
         except Exception as e:
-            QMessageBox.critical(self, "错误", f"加载模型下载面板失败：{str(e)}")
+            MessageBoxHelper.critical(self, "错误", f"加载模型下载面板失败：{str(e)}")

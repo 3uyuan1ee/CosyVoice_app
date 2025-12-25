@@ -11,6 +11,7 @@ from loguru import logger
 from typing import Optional
 
 from ui.audio_generation_worker import AudioGenerationWorker
+from ui.message_box_helper import MessageBoxHelper
 from backend.file_service import get_file_service
 from backend.path_manager import PathManager
 from backend.model_download_service import get_model_download_service, ModelDownloadStatus
@@ -138,7 +139,7 @@ class AudioClonePanel(QWidget):
             if file_path:
                 # 验证文件
                 if not os.path.exists(file_path):
-                    QMessageBox.warning(self, "Warning", "File does not exist")
+                    MessageBoxHelper.warning(self, "Warning", "File does not exist")
                     return
 
                 # 更新状态
@@ -152,7 +153,7 @@ class AudioClonePanel(QWidget):
 
         except Exception as e:
             logger.error(f"Error selecting reference audio: {e}")
-            QMessageBox.critical(self, "Error", f"Failed to select audio: {str(e)}")
+            MessageBoxHelper.critical(self, "Error", f"Failed to select audio: {str(e)}")
 
     def update_pitch_value(self, value):
         """更新音调显示值"""
@@ -232,22 +233,22 @@ class AudioClonePanel(QWidget):
         try:
             # 验证输入
             if not self.ref_audio_path:
-                QMessageBox.warning(self, "Warning", "Please select reference audio first")
+                MessageBoxHelper.warning(self, "Warning", "Please select reference audio first")
                 return
 
             text = self.textInput.toPlainText().strip()
             if not text:
-                QMessageBox.warning(self, "Warning", "Please enter text to synthesize")
+                MessageBoxHelper.warning(self, "Warning", "Please enter text to synthesize")
                 return
 
             if not self.selected_model_id:
-                QMessageBox.warning(self, "Warning", "Please select a model")
+                MessageBoxHelper.warning(self, "Warning", "Please select a model")
                 return
 
             # 检查模型是否已下载
             model_status = self.model_download_service.check_model_status(self.selected_model_id)
             if model_status != ModelDownloadStatus.DOWNLOADED:
-                QMessageBox.warning(self, "Warning", "Selected model is not downloaded. Please download it first.")
+                MessageBoxHelper.warning(self, "Warning", "Selected model is not downloaded. Please download it first.")
                 return
 
             # 禁用生成按钮
@@ -276,7 +277,7 @@ class AudioClonePanel(QWidget):
 
         except Exception as e:
             logger.error(f"Error starting audio generation: {e}")
-            QMessageBox.critical(self, "Error", f"Failed to start generation: {str(e)}")
+            MessageBoxHelper.critical(self, "Error", f"Failed to start generation: {str(e)}")
             self.btnGenerate.setEnabled(True)
 
     @pyqtSlot()
@@ -317,7 +318,7 @@ class AudioClonePanel(QWidget):
             self.generation_completed.emit(output_path, self.selected_model_id or "", text)
 
             # 显示成功消息
-            QMessageBox.information(
+            MessageBoxHelper.information(
                 self,
                 "Success",
                 f"{message}\n\nThe file has been added to the Results page."
@@ -326,7 +327,7 @@ class AudioClonePanel(QWidget):
             logger.info(f"Audio generation completed: {output_path}")
         else:
             # 显示失败消息
-            QMessageBox.warning(self, "Generation Failed", message)
+            MessageBoxHelper.warning(self, "Generation Failed", message)
             logger.warning(f"Audio generation failed: {message}")
 
         # 清理工作线程
@@ -343,7 +344,7 @@ class AudioClonePanel(QWidget):
         self.progressBar.setValue(0)
 
         # 显示错误消息
-        QMessageBox.critical(self, "Generation Error", error_msg)
+        MessageBoxHelper.critical(self, "Generation Error", error_msg)
 
         logger.error(f"Generation error: {error_msg}")
 

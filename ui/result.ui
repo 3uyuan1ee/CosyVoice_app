@@ -1,0 +1,316 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>Result</class>
+ <widget class="QWidget" name="Result">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>900</width>
+    <height>600</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Result</string>
+  </property>
+  <property name="styleSheet">
+   <string notr="true">QWidget#Result {
+    background: #1a1412;
+}
+
+QLabel {
+    background: transparent;
+    font-family: &quot;Press Start 2P&quot;, &quot;Courier New&quot;, monospace;
+}
+
+QGroupBox {
+    background: transparent;
+    border: 2px solid #2a1d19;
+    border-radius: 0px;
+    margin-top: 16px;
+    padding-top: 12px;
+    padding-left: 12px;
+    font-size: 10px;
+    letter-spacing: 0px;
+    text-transform: uppercase;
+    color: #8d7b68;
+    font-weight: bold;
+}
+
+QGroupBox::title {
+    subcontrol-origin: margin;
+    subcontrol-position: top left;
+    left: 8px;
+    top: -8px;
+    padding: 0 4px 0 4px;
+    background: #1a1412;
+}
+
+QListWidget {
+    background: #14100f;
+    color: #c4a77d;
+    border: 2px solid #2a1d19;
+    border-radius: 0px;
+    padding: 8px;
+    font-size: 11px;
+}
+
+QListWidget::item {
+    padding: 12px;
+    border-bottom: 1px solid #2a1d19;
+}
+
+QListWidget::item:selected {
+    background: #3d2b25;
+    color: #e8d5c4;
+}
+
+QListWidget::item:hover {
+    background: #2a1d19;
+}</string>
+  </property>
+  <layout class="QVBoxLayout" name="verticalLayout">
+   <property name="spacing">
+    <number>0</number>
+   </property>
+   <property name="leftMargin">
+    <number>0</number>
+   </property>
+   <property name="topMargin">
+    <number>0</number>
+   </property>
+   <property name="rightMargin">
+    <number>0</number>
+   </property>
+   <property name="bottomMargin">
+    <number>0</number>
+   </property>
+   <item>
+    <widget class="QWidget" name="contentWidget">
+     <property name="styleSheet">
+      <string notr="true">QWidget#contentWidget {
+    background: #1a1412;
+}</string>
+     </property>
+     <layout class="QVBoxLayout" name="contentLayout">
+      <property name="spacing">
+       <number>12</number>
+      </property>
+      <property name="leftMargin">
+       <number>32</number>
+      </property>
+      <property name="topMargin">
+       <number>20</number>
+      </property>
+      <property name="rightMargin">
+       <number>32</number>
+      </property>
+      <property name="bottomMargin">
+       <number>20</number>
+      </property>
+      <item>
+       <widget class="QLabel" name="titleLabel">
+        <property name="text">
+         <string>GENERATION RESULTS</string>
+        </property>
+        <property name="styleSheet">
+         <string notr="true">color: #c4a77d;
+    font-size: 18px;
+    font-weight: bold;
+    letter-spacing: 1px;
+    background: transparent;</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QGroupBox" name="resultsGroup">
+        <property name="title">
+         <string>GENERATED FILES</string>
+        </property>
+        <property name="minimumHeight">
+         <number>300</number>
+        </property>
+        <layout class="QVBoxLayout" name="resultsLayout">
+         <property name="spacing">
+          <number>0</number>
+         </property>
+         <property name="leftMargin">
+          <number>0</number>
+         </property>
+         <property name="topMargin">
+          <number>10</number>
+         </property>
+         <property name="rightMargin">
+          <number>0</number>
+         </property>
+         <property name="bottomMargin">
+          <number>10</number>
+         </property>
+         <item>
+          <widget class="QListWidget" name="resultsList">
+           <property name="minimumHeight">
+            <number>280</number>
+           </property>
+           <property name="styleSheet">
+            <string notr="true">QListWidget {
+    show-decoration-selected: 0;
+}</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </widget>
+      </item>
+      <item>
+       <layout class="QHBoxLayout" name="buttonLayout">
+        <property name="spacing">
+         <number>12</number>
+        </property>
+        <item>
+         <widget class="QPushButton" name="btnPlay">
+          <property name="minimumSize">
+           <size>
+            <width>0</width>
+            <height>44</height>
+           </size>
+          </property>
+          <property name="text">
+           <string>PLAY</string>
+          </property>
+          <property name="enabled">
+           <bool>false</bool>
+          </property>
+          <property name="styleSheet">
+           <string notr="true">QPushButton {
+    background: #1a1412;
+    color: #c4a77d;
+    border: 2px solid #3d2b25;
+    border-radius: 0px;
+    font-size: 11px;
+    font-weight: bold;
+    letter-spacing: 0px;
+    padding: 6px 12px;
+    text-align: center;
+}
+
+QPushButton:hover {
+    background: #3d2b25;
+    color: #e8d5c4;
+    border-color: #c4a77d;
+}
+
+QPushButton:pressed {
+    background: #c4a77d;
+    color: #1a1412;
+    border-color: #c4a77d;
+}
+
+QPushButton:disabled {
+    color: #6b5c52;
+    border-color: #2a1d19;
+}</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="btnSave">
+          <property name="minimumSize">
+           <size>
+            <width>0</width>
+            <height>44</height>
+           </size>
+          </property>
+          <property name="text">
+           <string>SAVE</string>
+          </property>
+          <property name="enabled">
+           <bool>false</bool>
+          </property>
+          <property name="styleSheet">
+           <string notr="true">QPushButton {
+    background: #1a1412;
+    color: #c4a77d;
+    border: 2px solid #3d2b25;
+    border-radius: 0px;
+    font-size: 11px;
+    font-weight: bold;
+    letter-spacing: 0px;
+    padding: 6px 12px;
+    text-align: center;
+}
+
+QPushButton:hover {
+    background: #3d2b25;
+    color: #e8d5c4;
+    border-color: #c4a77d;
+}
+
+QPushButton:pressed {
+    background: #c4a77d;
+    color: #1a1412;
+    border-color: #c4a77d;
+}
+
+QPushButton:disabled {
+    color: #6b5c52;
+    border-color: #2a1d19;
+}</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="btnDelete">
+          <property name="minimumSize">
+           <size>
+            <width>0</width>
+            <height>44</height>
+           </size>
+          </property>
+          <property name="text">
+           <string>DELETE</string>
+          </property>
+          <property name="enabled">
+           <bool>false</bool>
+          </property>
+          <property name="styleSheet">
+           <string notr="true">QPushButton {
+    background: #1a1412;
+    color: #c4a77d;
+    border: 2px solid #3d2b25;
+    border-radius: 0px;
+    font-size: 11px;
+    font-weight: bold;
+    letter-spacing: 0px;
+    padding: 6px 12px;
+    text-align: center;
+}
+
+QPushButton:hover {
+    background: #3d2b25;
+    color: #e8d5c4;
+    border-color: #c4a77d;
+}
+
+QPushButton:pressed {
+    background: #c4a77d;
+    color: #1a1412;
+    border-color: #c4a77d;
+}
+
+QPushButton:disabled {
+    color: #6b5c52;
+    border-color: #2a1d19;
+}</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </item>
+     </layout>
+    </widget>
+   </item>
+  </layout>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>

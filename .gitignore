@@ -10,3 +10,4 @@ static/voices/res_voices
 /CosyVoice_app.pro.user
 /data/logs/cosyvoice_app.log
 /data/config/config.yaml
+/CosyVoice/pretrained_models/

@@ -209,6 +209,7 @@ class AudioGenerationWorker(QThread):
                 strategy="balanced",
                 enable_preprocessing=False,  # 已经在前期预处理过
                 enable_pitch_shift=True,
+                model_type=self.model_type,  # 传递模型类型
                 callback=lambda p, s: self._update_progress(p, s) if 40 <= p <= 80 else None
             )
 

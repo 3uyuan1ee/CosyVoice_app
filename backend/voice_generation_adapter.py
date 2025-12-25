@@ -43,6 +43,7 @@ class GenerationRequest:
     enable_preprocessing: bool = True
     enable_pitch_shift: bool = True
     callback: Optional[Callable[[int, str], None]] = None
+    model_type: Optional[str] = None  # 模型类型（如 "cosyvoice3_2512"）
 
 
 @dataclass
@@ -120,38 +121,109 @@ class CVCloneAdapter(VoiceGenerationAdapter):
     CosyVoice适配器
 
     将CV_clone.CosyService适配到我们的接口
+    支持多模型动态切换
     """
 
     def __init__(self):
-        self._service = None
+        self._services = {}  # model_type -> CosyService
+        self._current_model_type = None
         self._lock = threading.Lock()
-        self._initialize_service()
+        self._initialize_default_service()
 
-    def _initialize_service(self):
-        """初始化CosyVoice服务"""
+    def _initialize_default_service(self):
+        """初始化默认CosyVoice服务"""
         try:
             from backend.CV_clone import get_cosy_service
+            logger.info("[CVCloneAdapter] 初始化默认CosyVoice服务...")
+            service = get_cosy_service()
+            # 获取当前服务的模型类型
+            if hasattr(service, 'model_manager') and service.model_manager:
+                model_path = service.model_manager.get_model_info().get('model_dir', '')
+                if 'cosyvoice3_2512' in model_path:
+                    self._current_model_type = 'cosyvoice3_2512'
+                else:
+                    self._current_model_type = 'cosyvoice3_2512'  # 默认
+            else:
+                self._current_model_type = 'cosyvoice3_2512'
 
-            logger.info("[CVCloneAdapter] 初始化CosyVoice服务...")
-            self._service = get_cosy_service()
-            logger.info("[CVCloneAdapter] CosyVoice服务初始化成功")
-
+            self._services[self._current_model_type] = service
+            logger.info(f"[CVCloneAdapter] 默认服务初始化成功，模型类型: {self._current_model_type}")
         except Exception as e:
-            logger.error(f"[CVCloneAdapter] CosyVoice服务初始化失败: {e}")
-            self._service = None
+            logger.error(f"[CVCloneAdapter] 默认服务初始化失败: {e}")
+
+    def _get_service_for_model(self, model_type: str):
+        """获取指定模型的CosyService实例"""
+        with self._lock:
+            if model_type in self._services:
+                return self._services[model_type]
+
+            # 为新模型创建服务实例
+            try:
+                from backend.CV_clone import CosyService
+                from backend.path_manager import PathManager
+                from backend.model_download_manager import ModelType
+
+                logger.info(f"[CVCloneAdapter] 为模型 {model_type} 创建新的服务实例...")
+
+                # 映射model_type到ModelType枚举
+                model_type_map = {
+                    "cosyvoice3_2512": ModelType.COSYVOICE3_2512,
+                    "cosyvoice2": ModelType.COSYVOICE2,
+                    "cosyvoice_300m": ModelType.COSYVOICE_300M,
+                    "cosyvoice_300m_sft": ModelType.COSYVOICE_300M_SFT,
+                    "cosyvoice_300m_instruct": ModelType.COSYVOICE_300M_INSTRUCT,
+                    "cosyvoice_ttsfrd": ModelType.COSYVOICE_TTSFRD,
+                }
+
+                enum_type = model_type_map.get(model_type)
+                if not enum_type:
+                    logger.error(f"[CVCloneAdapter] 未知的模型类型: {model_type}")
+                    return None
+
+                # 获取模型路径
+                path_manager = PathManager()
+                model_download_manager = ModelDownloadManager(path_manager)
+                model_dir = model_download_manager.get_model_path(enum_type)
+
+                if not model_dir or not os.path.exists(model_dir):
+                    logger.error(f"[CVCloneAdapter] 模型目录不存在: {model_dir}")
+                    return None
+
+                # 创建服务实例
+                service = CosyService(model_dir=model_dir)
+                self._services[model_type] = service
+                self._current_model_type = model_type
+                logger.info(f"[CVCloneAdapter] 成功创建服务实例，模型类型: {model_type}")
+                return service
+
+            except Exception as e:
+                logger.error(f"[CVCloneAdapter] 创建服务实例失败: {e}")
+                return None
 
     def generate(self, request: GenerationRequest) -> GenerationResult:
         """生成语音"""
         start_time = time.time()
 
         try:
-            if not self.is_available():
+            # 确定使用的模型类型
+            model_type = request.model_type or self._current_model_type
+
+            if not model_type:
                 return GenerationResult(
                     success=False,
-                    error_message="CosyVoice服务不可用"
+                    error_message="未指定模型类型"
                 )
 
-            logger.info(f"[CVCloneAdapter] 开始语音生成")
+            logger.info(f"[CVCloneAdapter] 开始语音生成，使用模型: {model_type}")
+
+            # 获取对应模型的服务实例
+            service = self._get_service_for_model(model_type)
+            if not service:
+                return GenerationResult(
+                    success=False,
+                    error_message=f"无法加载模型: {model_type}"
+                )
+
             logger.info(f"  文本: {request.text[:50]}...")
             logger.info(f"  参考音频: {request.reference_audio}")
             logger.info(f"  音调调整: {request.pitch_shift}")
@@ -167,7 +239,7 @@ class CVCloneAdapter(VoiceGenerationAdapter):
                     ref_audio = request.reference_audio
 
             # 调用CosyVoice服务
-            cosy_result = self._service.clone_voice(
+            cosy_result = service.clone_voice(
                 text=request.text,
                 reference_audio_path=ref_audio,
                 prompt_text=request.prompt_text,
@@ -200,6 +272,7 @@ class CVCloneAdapter(VoiceGenerationAdapter):
                     "preprocessed": request.enable_preprocessing,
                     "pitch_shifted": request.enable_pitch_shift and request.pitch_shift != 0,
                     "pitch_value": request.pitch_shift,
+                    "model_type": model_type,
                 }
 
                 logger.info(f"[CVCloneAdapter] 语音生成成功: {output_path}")
@@ -285,11 +358,17 @@ class CVCloneAdapter(VoiceGenerationAdapter):
     def is_available(self) -> bool:
         """检查CosyVoice是否可用"""
         try:
-            if self._service is None:
+            if not self._services:
                 return False
 
-            status = self._service.get_service_status()
-            return status.get('cosyvoice_available', False)
+            # 检查至少有一个服务可用
+            for service in self._services.values():
+                if service:
+                    status = service.get_service_status()
+                    if status.get('cosyvoice_available', False):
+                        return True
+
+            return False
 
         except Exception as e:
             logger.error(f"[CVCloneAdapter] 可用性检查失败: {e}")
@@ -298,10 +377,15 @@ class CVCloneAdapter(VoiceGenerationAdapter):
     def get_service_status(self) -> Dict[str, Any]:
         """获取服务状态"""
         try:
-            if self._service is None:
+            if not self._services:
                 return {"available": False, "error": "Service not initialized"}
 
-            return self._service.get_comprehensive_status()
+            # 返回当前服务的状态
+            current_service = self._services.get(self._current_model_type)
+            if current_service:
+                return current_service.get_comprehensive_status()
+
+            return {"available": False, "error": "No current service"}
 
         except Exception as e:
             logger.error(f"[CVCloneAdapter] 获取服务状态失败: {e}")

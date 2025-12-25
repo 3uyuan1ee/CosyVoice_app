@@ -24,13 +24,14 @@ class AudioGenerationWorker(QThread):
     """
 
     def __init__(self, reference_audio: str, text: str, pitch_shift: int = 0,
-                 model_type: str = "cosyvoice3_2512", parent=None):
+                 model_type: str = "cosyvoice3_2512", language: Optional[str] = None, parent=None):
         super().__init__(parent)
 
         self.reference_audio = reference_audio
         self.text = text
         self.pitch_shift = pitch_shift
         self.model_type = model_type
+        self.language = language  # 参考音频语言 (None=自动检测)
 
         self.signals = GenerationSignals()
         self._is_cancelled = False
@@ -210,6 +211,7 @@ class AudioGenerationWorker(QThread):
                 enable_preprocessing=False,  # 已经在前期预处理过
                 enable_pitch_shift=True,
                 model_type=self.model_type,  # 传递模型类型
+                language=self.language,  # 传递参考音频语言
                 callback=lambda p, s: self._update_progress(p, s) if 40 <= p <= 80 else None
             )
 

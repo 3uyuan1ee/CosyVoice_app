@@ -15,6 +15,9 @@ from pathlib import Path
 from loguru import logger
 import threading
 
+# 导入模型管理相关
+from backend.model_download_manager import ModelDownloadManager, ModelType
+
 
 class GenerationStrategy(Enum):
     """生成策略枚举"""
@@ -37,6 +40,7 @@ class GenerationRequest:
     enable_pitch_shift: bool = True
     callback: Optional[Callable[[int, str], None]] = None
     model_type: Optional[str] = None  # 模型类型（如 "cosyvoice3_2512"）
+    language: Optional[str] = None  # 参考音频语言 ('zh'=中文, 'en'=英文, 'ja'=日文, 'ko'=韩文, None=自动检测)
 
 
 @dataclass
@@ -154,7 +158,6 @@ class CVCloneAdapter(VoiceGenerationAdapter):
             try:
                 from backend.CV_clone import CosyService
                 from backend.path_manager import PathManager
-                from backend.model_download_manager import ModelType
 
                 logger.info(f"[CVCloneAdapter] 为模型 {model_type} 创建新的服务实例...")
 
@@ -220,6 +223,10 @@ class CVCloneAdapter(VoiceGenerationAdapter):
             logger.info(f"  文本: {request.text[:50]}...")
             logger.info(f"  参考音频: {request.reference_audio}")
             logger.info(f"  音调调整: {request.pitch_shift}")
+            if request.language:
+                logger.info(f"  参考音频语言: {request.language}")
+            else:
+                logger.info(f"  参考音频语言: 自动检测")
 
             # 预处理参考音频
             ref_audio = request.reference_audio
@@ -237,7 +244,8 @@ class CVCloneAdapter(VoiceGenerationAdapter):
                 reference_audio_path=ref_audio,
                 prompt_text=request.prompt_text,
                 output_filename=request.output_path,
-                speed=request.speed
+                speed=request.speed,
+                language=request.language
             )
 
             generation_time = time.time() - start_time

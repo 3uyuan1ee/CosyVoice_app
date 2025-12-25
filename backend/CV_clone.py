@@ -651,17 +651,35 @@ class VoiceCloner(LoggerMixin):
                 self._whisper_model = False
         return self._whisper_model
 
-    def _transcribe_audio(self, audio_path: str) -> Optional[str]:
-        """使用 Whisper 从音频中提取文本"""
+    def _transcribe_audio(self, audio_path: str, language: Optional[str] = None) -> Optional[str]:
+        """
+        使用 Whisper 从音频中提取文本
+
+        Args:
+            audio_path: 音频文件路径
+            language: 参考音频的语言 ('zh'=中文, 'en'=英文, 'ja'=日文, 'ko'=韩文, None=自动检测)
+
+        Note:
+            - language参数指定的是参考音频（prompt_audio）的语言，不是合成文本的语言
+            - 指定正确的语言可以显著提高音频克隆质量，因为：
+              1. Whisper能更准确地识别参考音频中的发音
+              2. 识别出的文本作为prompt时，能更好地匹配音频特征
+              3. 避免语言混淆导致的音色偏差
+            - 不指定language时，Whisper会自动检测语言（可能不够准确）
+            - 建议：如果知道参考音频的语言，应该明确指定
+        """
         try:
             model = self._load_whisper_model()
             if model is False:
                 return None
 
             # 加载音频并转录
-            result = model.transcribe(audio_path, language='zh')
+            # 如果指定了language，使用指定语言；否则自动检测
+            result = model.transcribe(audio_path, language=language)
             text = result['text'].strip()
-            self.logger.info(f"[VoiceCloner] ASR 识别文本: {text}")
+
+            lang_info = f"语言={language}" if language else "语言=自动检测"
+            self.logger.info(f"[VoiceCloner] ASR 识别文本 ({lang_info}): {text}")
             return text if text else None
         except Exception as e:
             self.logger.warning(f"[VoiceCloner] ASR 识别失败: {e}")
@@ -703,7 +721,7 @@ class VoiceCloner(LoggerMixin):
             else:
                 # 未提供 prompt_text，使用 ASR 从参考音频中提取文本
                 self.logger.info("[VoiceCloner] 未提供 prompt_text，尝试从参考音频中提取文本...")
-                transcribed_text = self._transcribe_audio(reference_audio)
+                transcribed_text = self._transcribe_audio(reference_audio, language=request.language)
 
                 if transcribed_text:
                     # 使用识别出的文本作为 prompt
@@ -919,7 +937,7 @@ class CosyService(LoggerMixin):
 
     def clone_voice(self, text: str, reference_audio_path: str,
                    prompt_text: str = None, output_filename: str = None,
-                   speed: float = 1.0, stream: bool = False) -> VoiceCloneResult:
+                   speed: float = 1.0, stream: bool = False, language: str = None) -> VoiceCloneResult:
         """
         语音克隆主接口
 
@@ -930,6 +948,8 @@ class CosyService(LoggerMixin):
             output_filename: 输出文件名（可选）
             speed: 语速控制（0.1-3.0）
             stream: 是否使用流式推理
+            language: 参考音频的语言 ('zh'=中文, 'en'=英文, 'ja'=日文, 'ko'=韩文, None=自动检测)
+                      指定语言可以提高whisper识别准确度，从而提升克隆质量
 
         Returns:
             VoiceCloneResult: 克隆结果
@@ -952,7 +972,8 @@ class CosyService(LoggerMixin):
                 prompt_text=prompt_text,
                 output_filename=output_filename,
                 speed=speed,
-                stream=stream
+                stream=stream,
+                language=language
             )
 
             # 验证参考音频

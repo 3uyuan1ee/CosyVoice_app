@@ -176,16 +176,35 @@ class SystemInfoService:
 
             elif platform.system() == "Windows":
                 import subprocess
-                result = subprocess.run(
-                    ["wmic", "cpu", "get", "name"],
-                    capture_output=True,
-                    text=True,
-                    timeout=5
-                )
-                if result.returncode == 0:
-                    lines = result.stdout.strip().split("\n")
-                    if len(lines) > 1:
-                        return lines[1].strip()
+                # 方法1: 优先使用 PowerShell (Windows 11+)
+                try:
+                    result = subprocess.run(
+                        ["powershell", "-Command",
+                         "Get-WmiObject Win32_Processor | Select-Object -ExpandProperty Name"],
+                        capture_output=True,
+                        text=True,
+                        timeout=5,
+                        shell=True
+                    )
+                    if result.returncode == 0 and result.stdout.strip():
+                        return result.stdout.strip()
+                except Exception:
+                    pass
+
+                # 方法2: 回退到 WMIC (Windows 10 及更早版本)
+                try:
+                    result = subprocess.run(
+                        ["wmic", "cpu", "get", "name"],
+                        capture_output=True,
+                        text=True,
+                        timeout=5
+                    )
+                    if result.returncode == 0:
+                        lines = result.stdout.strip().split("\n")
+                        if len(lines) > 1:
+                            return lines[1].strip()
+                except Exception:
+                    pass
 
             return platform.processor() or "Unknown CPU"
 

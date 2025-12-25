@@ -310,9 +310,12 @@ class AudioQualityAnalyzer:
             return 30
 
     def _score_clarity(self, audio: np.ndarray) -> float:
-        """评分：清晰度（基于零交叉率）"""
-        zcr = librosa.feature.zero_crossing_rate(audio)[0]
-        mean_zcr = np.mean(zcr)
+        """评分：清晰度（基于零交叉率）- 使用numpy实现避免librosa bus error"""
+        # 使用numpy计算零交叉率
+        sign = np.sign(audio)
+        zero_crossings = np.sum(np.abs(np.diff(sign)))
+        total_samples = len(audio) - 1
+        mean_zcr = zero_crossings / total_samples if total_samples > 0 else 0
 
         # 语音的 ZCR 通常在 0.1-0.5 之间
         if 0.1 <= mean_zcr <= 0.5:
@@ -427,17 +430,26 @@ class ComprehensivePreprocessStrategy(PreprocessStrategy):
                 processed_audio = self._trim_silence(processed_audio)
                 applied_steps.append("trim_silence")
 
-            # 2. 重采样
+            # 2. 重采样（使用torchaudio替代librosa，避免bus error）
             if sr != config.target_sample_rate:
-                processed_audio = librosa.resample(
-                    processed_audio,
-                    orig_sr=sr,
-                    target_sr=config.target_sample_rate
-                )
-                processed_sr = config.target_sample_rate
-                applied_steps.append("resample")
-                info['original_sample_rate'] = sr
-                info['target_sample_rate'] = config.target_sample_rate
+                try:
+                    import torchaudio
+                    import torch
+                    # 转换为torch tensor，确保在CPU上
+                    audio_tensor = torch.from_numpy(processed_audio).float().unsqueeze(0).cpu()
+                    # 使用torchaudio重采样，也确保在CPU上
+                    resampler = torchaudio.transforms.Resample(
+                        orig_freq=sr,
+                        new_freq=config.target_sample_rate
+                    ).cpu()
+                    processed_audio = resampler(audio_tensor).squeeze(0).numpy()
+                    processed_sr = config.target_sample_rate
+                    applied_steps.append("resample")
+                    info['original_sample_rate'] = sr
+                    info['target_sample_rate'] = config.target_sample_rate
+                except Exception as e:
+                    self.logger.warning(f"torchaudio重采样失败，跳过: {e}")
+                    # 继续使用原始采样率
 
             # 3. 降噪
             if config.denoise:
@@ -469,8 +481,22 @@ class ComprehensivePreprocessStrategy(PreprocessStrategy):
             raise PreprocessProcessingError(f"预处理失败: {e}") from e
 
     def _trim_silence(self, audio: np.ndarray, threshold_db: float = 20.0) -> np.ndarray:
-        """裁剪首尾静音"""
-        trimmed, _ = librosa.effects.trim(audio, top_db=threshold_db)
+        """裁剪首尾静音（使用numpy实现，避免librosa的bus error）"""
+        # 计算音频的分贝值
+        magnitude = np.abs(audio)
+        magnitude_db = 20 * np.log10(magnitude + 1e-10)
+
+        # 找到非静音的开始和结束位置
+        non_silent = magnitude_db > -threshold_db
+
+        if not np.any(non_silent):
+            return audio  # 全是静音
+
+        # 找到第一个和最后一个非静音样本
+        start = np.where(non_silent)[0][0]
+        end = np.where(non_silent)[0][-1] + 1
+
+        trimmed = audio[start:end]
 
         if len(trimmed) < len(audio) * 0.5:
             # 裁剪后太短，保留原音频
@@ -601,12 +627,26 @@ class AudioPreprocessor:
         if not os.path.exists(file_path):
             raise AudioLoadError(f"文件不存在: {file_path}")
 
-        if not LIBROSA_AVAILABLE:
-            raise AudioLoadError("librosa 未安装，无法加载音频")
-
         try:
-            # 加载音频
-            audio, sr = librosa.load(file_path, sr=None)
+            # 优先使用torchaudio，避免librosa在macOS MPS环境下的bus error
+            try:
+                import torchaudio
+                import torch
+                waveform, sr = torchaudio.load(file_path)
+                # 确保tensor在CPU上，避免MPS相关的问题
+                if waveform.device.type != 'cpu':
+                    waveform = waveform.cpu()
+                # 转换为numpy数组并转为单声道
+                audio = waveform.numpy()
+                if audio.shape[0] > 1:
+                    audio = audio.mean(axis=0)  # 转为单声道
+                else:
+                    audio = audio[0]
+            except ImportError:
+                if not LIBROSA_AVAILABLE:
+                    raise AudioLoadError("torchaudio和librosa均未安装，无法加载音频")
+                # 使用librosa作为备选
+                audio, sr = librosa.load(file_path, sr=None)
 
             # 获取元数据
             file_size = os.path.getsize(file_path)
@@ -614,7 +654,7 @@ class AudioPreprocessor:
                 file_path=file_path,
                 duration=len(audio) / sr,
                 sample_rate=sr,
-                channels=1,  # librosa 默认转为单声道
+                channels=1,  # 默认转为单声道
                 file_size=file_size,
                 format='wav'
             )

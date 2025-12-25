@@ -12,9 +12,22 @@ CosyVoice_app - PyQt6 主程序入口
 
 import sys
 import signal
+import os
+import multiprocessing
 from pathlib import Path
 from loguru import logger
 from PyQt6.QtWidgets import QApplication
+
+# 修复macOS上soundfile与PyQt6的多进程冲突
+# 必须在创建QApplication之前设置
+try:
+    if sys.platform == 'darwin':
+        # 设置multiprocessing使用spawn方式，避免fork方式与PyQt6冲突
+        multiprocessing.set_start_method('spawn', force=False)
+        # 设置环境变量，防止libsndfile使用多进程
+        os.environ['SF_ALLOW_MULTIPROCESSING'] = '0'
+except RuntimeError:
+    pass  # 已经设置过
 
 # 添加项目根目录到路径
 PROJECT_ROOT = Path(__file__).parent

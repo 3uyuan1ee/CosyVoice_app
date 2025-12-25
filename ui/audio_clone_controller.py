@@ -35,6 +35,9 @@ class AudioClonePanel(QWidget):
         self.path_manager = PathManager()
         self.model_download_service = get_model_download_service()
 
+        # 设置 path_manager 到 download_service（关键！）
+        self.model_download_service.set_path_manager(self.path_manager)
+
         # 状态变量
         self.ref_audio_path: Optional[str] = None
         self.generated_audio_path: Optional[str] = None
@@ -51,6 +54,9 @@ class AudioClonePanel(QWidget):
 
         # 连接UI信号
         self.connect_signals()
+
+        # 初始化按钮状态
+        self.update_generate_button()
 
         logger.info("AudioClonePanel initialized")
 
@@ -83,6 +89,10 @@ class AudioClonePanel(QWidget):
             self.modelComboBox.currentIndexChanged.connect(self._on_model_changed)
 
             logger.info(f"Model selection initialized with {len(available_models)} models")
+            logger.info(f"Selected model: {self.selected_model_id}")
+
+            # 初始化完成后更新按钮状态
+            self.update_generate_button()
 
         except Exception as e:
             logger.error(f"Error initializing model selection: {e}")
@@ -159,12 +169,63 @@ class AudioClonePanel(QWidget):
                              not self.generation_worker.isRunning())
 
         # 检查选中的模型是否已下载
-        model_available = True
+        model_available = False
+        model_status = None
         if has_model:
-            status = self.model_download_service.check_model_status(self.selected_model_id)
-            model_available = (status == self.model_download_service.ModelDownloadStatus.DOWNLOADED)
+            try:
+                model_status = self.model_download_service.check_model_status(self.selected_model_id)
+                model_available = (model_status == ModelDownloadStatus.DOWNLOADED)
+                logger.info(f"[Button Check] Model: {self.selected_model_id}, Status: {model_status}, Available: {model_available}")
 
-        self.btnGenerate.setEnabled(has_text and has_ref_audio and has_model and model_available and is_not_generating)
+                # 额外诊断：检查模型路径
+                if self.model_download_service._path_manager:
+                    path_methods = {
+                        "cosyvoice3_2512": self.model_download_service._path_manager.get_cosyvoice3_2512_model_path,
+                        "cosyvoice2": self.model_download_service._path_manager.get_cosyvoice2_model_path,
+                        "cosyvoice_300m": self.model_download_service._path_manager.get_cosyvoice_300m_model_path,
+                        "cosyvoice_300m_sft": self.model_download_service._path_manager.get_cosyvoice_300m_sft_model_path,
+                        "cosyvoice_300m_instruct": self.model_download_service._path_manager.get_cosyvoice_300m_instruct_model_path,
+                        "cosyvoice_ttsfrd": self.model_download_service._path_manager.get_cosyvoice_ttsfrd_model_path,
+                    }
+                    path_method = path_methods.get(self.selected_model_id)
+                    if path_method:
+                        model_path = path_method()
+                        import os
+                        exists = os.path.exists(model_path)
+                        logger.info(f"[Button Check] Model path: {model_path}, Exists: {exists}")
+            except Exception as e:
+                logger.error(f"[Button Check] Error checking model status: {e}")
+
+        # 启用生成按钮
+        should_enable = has_text and has_ref_audio and has_model and model_available and is_not_generating
+        self.btnGenerate.setEnabled(should_enable)
+
+        # 记录状态
+        logger.info(f"[Button Check] Text: {has_text}, Audio: {has_ref_audio}, Model: {has_model}, Available: {model_available}, NotGenerating: {is_not_generating}")
+        logger.info(f"[Button Check] Button enabled: {should_enable}")
+
+        # 添加工具提示，说明为什么按钮不可用
+        if not should_enable:
+            reasons = []
+            if not has_text:
+                reasons.append("请输入要合成的文本")
+            if not has_ref_audio:
+                reasons.append("请选择参考音频文件")
+            if not has_model:
+                reasons.append("请选择模型")
+            if has_model and not model_available:
+                reasons.append(f"选择的模型未下载（当前状态: {model_status}），请先在模型下载页面下载")
+            if not is_not_generating:
+                reasons.append("正在生成音频，请等待")
+
+            if reasons:
+                tooltip = " | ".join(reasons)
+                self.btnGenerate.setToolTip(tooltip)
+                logger.info(f"[Button Check] Tooltip: {tooltip}")
+            else:
+                self.btnGenerate.setToolTip("")
+        else:
+            self.btnGenerate.setToolTip("点击开始生成音频")
 
     def generate_audio(self):
         """生成音频"""
@@ -185,7 +246,7 @@ class AudioClonePanel(QWidget):
 
             # 检查模型是否已下载
             model_status = self.model_download_service.check_model_status(self.selected_model_id)
-            if model_status != self.model_download_service.ModelDownloadStatus.DOWNLOADED:
+            if model_status != ModelDownloadStatus.DOWNLOADED:
                 QMessageBox.warning(self, "Warning", "Selected model is not downloaded. Please download it first.")
                 return
 

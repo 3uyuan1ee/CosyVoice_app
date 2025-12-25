@@ -238,17 +238,10 @@ class CVCloneAdapter(VoiceGenerationAdapter):
                 logger.debug("[CVCloneAdapter] 音频已预处理,跳过")
                 return audio_path, True
 
-            logger.info(f"[CVCloneAdapter] 开始预处理音频: {audio_path}")
-
-            # 使用CosyService的内置预处理
-            preprocessed_path = self._service._preprocess_reference_audio(audio_path)
-
-            if preprocessed_path and os.path.exists(preprocessed_path):
-                logger.info(f"[CVCloneAdapter] 预处理成功: {preprocessed_path}")
-                return preprocessed_path, True
-            else:
-                logger.warning("[CVCloneAdapter] 预处理失败,使用原始音频")
-                return audio_path, False
+            logger.info(f"[CVCloneAdapter] 跳过预处理，直接使用原始音频: {audio_path}")
+            # 暂时跳过预处理以避免bus error
+            # CosyVoice内置了音频处理功能，可以直接使用原始音频
+            return audio_path, True
 
         except Exception as e:
             logger.error(f"[CVCloneAdapter] 预处理异常: {e}")

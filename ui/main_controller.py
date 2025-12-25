@@ -40,6 +40,7 @@ class MainWindow(QMainWindow):
         self.btnModelDownload.clicked.connect(self.show_model_download)
         self.btnResults.clicked.connect(self.show_results)
         self.btnStatus.clicked.connect(self.show_status)
+        self.btnSettings.clicked.connect(self.show_settings)
 
     def show_audio_clone(self):
         """显示音频克隆页面"""
@@ -189,3 +190,28 @@ class MainWindow(QMainWindow):
 
         except Exception as e:
             MessageBoxHelper.critical(self, "Error", f"Fail to load status interface：{str(e)}")
+
+    def show_settings(self):
+        """显示Settings页面"""
+        try:
+            from ui.settings_controller import SettingsPanel
+            # 如果还没加载Settings面板
+            if not hasattr(self, 'settings_panel'):
+                # 清空占位符布局
+                layout = self.settingsPage.layout()
+                while layout.count():
+                    item = layout.takeAt(0)
+                    widget = item.widget()
+                    if widget:
+                        widget.setParent(None)
+
+                # 创建Settings面板
+                self.settings_panel = SettingsPanel()
+                layout.addWidget(self.settings_panel)
+
+            # 切换到Settings页面
+            self.stackedWidget.setCurrentIndex(5)
+            self.statusBar().showMessage("Settings", 3000)
+
+        except Exception as e:
+            MessageBoxHelper.critical(self, "Error", f"Fail to load settings interface：{str(e)}")

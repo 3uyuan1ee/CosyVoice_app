@@ -16,7 +16,7 @@ import os
 import multiprocessing
 from pathlib import Path
 from loguru import logger
-from PyQt6.QtWidgets import QApplication
+from PyQt6.QtWidgets import QApplication, QMessageBox
 
 # 修复macOS上soundfile与PyQt6的多进程冲突
 # 必须在创建QApplication之前设置
@@ -35,6 +35,7 @@ sys.path.insert(0, str(PROJECT_ROOT))
 
 # 导入应用模块
 from ui.main_controller import MainWindow
+from ui.message_box_helper import MessageBoxHelper
 
 # 导入错误处理
 from backend.error_handler import (
@@ -112,7 +113,7 @@ def perform_startup_checks():
                 if error.recovery_hint:
                     msg += f"   {error.recovery_hint}\n"
 
-            QMessageBox.critical(None, "启动失败", msg)
+            MessageBoxHelper.critical(None, "启动失败", msg)
 
         sys.exit(1)
 

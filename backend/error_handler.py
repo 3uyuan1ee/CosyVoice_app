@@ -11,6 +11,7 @@ from enum import Enum
 from loguru import logger
 from PyQt6.QtWidgets import QMessageBox, QWidget
 from PyQt6.QtCore import QObject, pyqtSignal
+from ui.message_box_helper import MessageBoxHelper
 
 
 # ==================== 异常类层次结构 ====================
@@ -212,18 +213,14 @@ class ErrorHandler(QObject):
         if hasattr(exc, 'recovery_hint') and exc.recovery_hint:
             details_text += f"建议:\n{exc.recovery_hint}"
 
-        # 显示对话框
-        if details_text:
-            msg_box = QMessageBox(self._parent_widget)
-            msg_box.setIcon(icon)
-            msg_box.setWindowTitle(title)
-            msg_box.setText(message)
-            msg_box.setDetailedText(details_text)
-            msg_box.exec()
-        else:
-            QMessageBox(self._parent_widget).setIcon(icon).setTitle(
-                title
-            ).setText(message).exec()
+        # 使用 MessageBoxHelper 显示对话框
+        MessageBoxHelper.with_details(
+            self._parent_widget,
+            title,
+            message,
+            icon,
+            details_text if details_text else None
+        )
 
     def get_error_statistics(self) -> dict:
         """获取错误统计"""
@@ -384,7 +381,7 @@ def show_warning(message: str, parent: Optional[QWidget] = None):
         message: 警告消息
         parent: 父窗口
     """
-    QMessageBox.warning(parent, "警告", message)
+    MessageBoxHelper.warning(parent, "警告", message)
 
 
 def show_info(message: str, parent: Optional[QWidget] = None):
@@ -395,7 +392,7 @@ def show_info(message: str, parent: Optional[QWidget] = None):
         message: 信息消息
         parent: 父窗口
     """
-    QMessageBox.information(parent, "提示", message)
+    MessageBoxHelper.information(parent, "提示", message)
 
 
 def log_and_raise_error(exc_class: type, message: str,

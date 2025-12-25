@@ -10,6 +10,7 @@ from loguru import logger
 from typing import Dict, Optional
 
 from ui.model_card_widget import ModelCardWidget, ModelStatus
+from ui.message_box_helper import MessageBoxHelper
 from backend.model_download_service import get_model_download_service, ModelInfo
 from backend.path_manager import PathManager
 from backend.model_download_manager import ModelDownloadManager
@@ -191,13 +192,10 @@ class ModelDownloadController(QWidget):
             logger.info(f"Delete requested for model: {model_id}")
 
             # 确认对话框
-            from PyQt6.QtWidgets import QMessageBox
-            reply = QMessageBox.question(
+            reply = MessageBoxHelper.question(
                 self,
                 "Confirm Delete",
-                "Are you sure you want to delete this model? This will free up disk space but you'll need to download again.",
-                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
-                QMessageBox.StandardButton.No
+                "Are you sure you want to delete this model? This will free up disk space but you'll need to download again."
             )
 
             if reply == QMessageBox.StandardButton.Yes:
@@ -267,12 +265,10 @@ class ModelDownloadController(QWidget):
                 return
 
             # 确认对话框
-            reply = QMessageBox.question(
+            reply = MessageBoxHelper.question(
                 self,
                 "Confirm Download All",
-                f"Download {len(not_downloaded)} models? This may take a while.",
-                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
-                QMessageBox.StandardButton.No
+                f"Download {len(not_downloaded)} models? This may take a while."
             )
 
             if reply == QMessageBox.StandardButton.Yes:
@@ -297,11 +293,11 @@ class ModelDownloadController(QWidget):
 
     def _show_error_message(self, title: str, message: str):
         """显示错误消息"""
-        QMessageBox.critical(self, title, message)
+        MessageBoxHelper.critical(self, title, message)
 
     def _show_info_message(self, message: str):
         """显示信息消息"""
-        QMessageBox.information(self, "Information", message)
+        MessageBoxHelper.information(self, "Information", message)
 
     def cleanup(self):
         """清理资源"""

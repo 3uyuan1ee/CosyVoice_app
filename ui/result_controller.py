@@ -15,6 +15,7 @@ from datetime import datetime
 from backend.audio_player_service import get_audio_player_service
 from backend.file_service import get_file_service
 from backend.path_manager import PathManager
+from ui.message_box_helper import MessageBoxHelper
 
 
 @dataclass
@@ -209,11 +210,11 @@ class ResultPanel(QWidget):
             gen_file = self.get_selected_file()
 
             if not gen_file:
-                QMessageBox.warning(self, "Warning", "Please select a file to play")
+                MessageBoxHelper.warning(self, "Warning", "Please select a file to play")
                 return
 
             if not os.path.exists(gen_file.path):
-                QMessageBox.warning(self, "Warning", f"File not found: {gen_file.name}")
+                MessageBoxHelper.warning(self, "Warning", f"File not found: {gen_file.name}")
                 return
 
             # 根据当前状态决定播放或暂停
@@ -224,7 +225,7 @@ class ResultPanel(QWidget):
                 # 加载并播放
                 if self.audio_player.get_current_file() != gen_file.path:
                     if not self.audio_player.load_file(gen_file.path):
-                        QMessageBox.critical(self, "Error", "Failed to load audio file")
+                        MessageBoxHelper.critical(self, "Error", "Failed to load audio file")
                         return
 
                 self.audio_player.play()
@@ -234,7 +235,7 @@ class ResultPanel(QWidget):
 
         except Exception as e:
             logger.error(f"Error toggling playback: {e}")
-            QMessageBox.critical(self, "Error", f"Playback error: {str(e)}")
+            MessageBoxHelper.critical(self, "Error", f"Playback error: {str(e)}")
 
     def _on_playback_state_changed(self, state: str):
         """处理播放状态变化"""
@@ -249,7 +250,7 @@ class ResultPanel(QWidget):
 
     def _on_playback_error(self, error: str):
         """处理播放错误"""
-        QMessageBox.warning(self, "Playback Error", error)
+        MessageBoxHelper.warning(self, "Playback Error", error)
         self.is_playing = False
         self.btnPlay.setText("PLAY")
 
@@ -259,11 +260,11 @@ class ResultPanel(QWidget):
             gen_file = self.get_selected_file()
 
             if not gen_file:
-                QMessageBox.warning(self, "Warning", "Please select a file to save")
+                MessageBoxHelper.warning(self, "Warning", "Please select a file to save")
                 return
 
             if not os.path.exists(gen_file.path):
-                QMessageBox.warning(self, "Warning", f"File not found: {gen_file.name}")
+                MessageBoxHelper.warning(self, "Warning", f"File not found: {gen_file.name}")
                 return
 
             # 生成默认文件名
@@ -284,15 +285,15 @@ class ResultPanel(QWidget):
                 )
 
                 if success:
-                    QMessageBox.information(self, "Success", message)
+                    MessageBoxHelper.information(self, "Success", message)
                     logger.info(f"Audio saved to: {save_path}")
                 else:
-                    QMessageBox.warning(self, "Save Failed", message)
+                    MessageBoxHelper.warning(self, "Save Failed", message)
                     logger.warning(f"Failed to save audio: {message}")
 
         except Exception as e:
             logger.error(f"Error saving audio: {e}")
-            QMessageBox.critical(self, "Error", f"Failed to save audio: {str(e)}")
+            MessageBoxHelper.critical(self, "Error", f"Failed to save audio: {str(e)}")
 
     def delete_selected_audio(self):
         """删除选中的音频文件"""
@@ -300,16 +301,14 @@ class ResultPanel(QWidget):
             gen_file = self.get_selected_file()
 
             if not gen_file:
-                QMessageBox.warning(self, "Warning", "Please select a file to delete")
+                MessageBoxHelper.warning(self, "Warning", "Please select a file to delete")
                 return
 
             # 确认删除
-            reply = QMessageBox.question(
+            reply = MessageBoxHelper.question(
                 self,
                 "Confirm Delete",
-                f"Are you sure you want to delete:\n{gen_file.name}?",
-                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
-                QMessageBox.StandardButton.No
+                f"Are you sure you want to delete:\n{gen_file.name}?"
             )
 
             if reply == QMessageBox.StandardButton.Yes:
@@ -319,7 +318,7 @@ class ResultPanel(QWidget):
                         os.remove(gen_file.path)
                         logger.info(f"Deleted file: {gen_file.path}")
                     except Exception as e:
-                        QMessageBox.critical(self, "Error", f"Failed to delete file: {str(e)}")
+                        MessageBoxHelper.critical(self, "Error", f"Failed to delete file: {str(e)}")
                         logger.error(f"Error deleting file: {e}")
                         return
 
@@ -337,7 +336,7 @@ class ResultPanel(QWidget):
 
         except Exception as e:
             logger.error(f"Error deleting audio: {e}")
-            QMessageBox.critical(self, "Error", f"Failed to delete audio: {str(e)}")
+            MessageBoxHelper.critical(self, "Error", f"Failed to delete audio: {str(e)}")
 
     def refresh_list(self):
         """刷新文件列表"""

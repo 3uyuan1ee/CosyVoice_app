@@ -304,6 +304,70 @@ class ModelDownloadService(QObject):
             logger.error(f"Error cancelling download for {model_id}: {e}")
             return False
 
+    def delete_model(self, model_id: str) -> bool:
+        """
+        删除已下载的模型
+
+        Args:
+            model_id: 模型ID
+
+        Returns:
+            bool: 是否成功删除
+        """
+        try:
+            # 检查模型是否正在下载
+            if model_id in self._download_tasks:
+                logger.warning(f"Cannot delete model {model_id}: download is in progress")
+                return False
+
+            # 获取模型信息
+            model_info = self.get_model_info(model_id)
+            if not model_info:
+                logger.error(f"Unknown model ID: {model_id}")
+                return False
+
+            # 获取模型路径
+            if not self._path_manager:
+                logger.error("Path manager not set")
+                return False
+
+            # 映射model_id到路径获取方法
+            path_methods = {
+                "cosyvoice3_2512": self._path_manager.get_cosyvoice3_2512_model_path,
+                "cosyvoice2": self._path_manager.get_cosyvoice2_model_path,
+                "cosyvoice_300m": self._path_manager.get_cosyvoice_300m_model_path,
+                "cosyvoice_300m_sft": self._path_manager.get_cosyvoice_300m_sft_model_path,
+                "cosyvoice_300m_instruct": self._path_manager.get_cosyvoice_300m_instruct_model_path,
+                "cosyvoice_ttsfrd": self._path_manager.get_cosyvoice_ttsfrd_model_path,
+            }
+
+            path_method = path_methods.get(model_id)
+            if not path_method:
+                logger.error(f"No path method found for model: {model_id}")
+                return False
+
+            model_path = path_method()
+
+            # 删除模型目录
+            import os
+            import shutil
+
+            if not os.path.exists(model_path):
+                logger.warning(f"Model path does not exist: {model_path}")
+                return True  # 已经不存在了，视为删除成功
+
+            try:
+                shutil.rmtree(model_path)
+                logger.info(f"Model directory deleted: {model_path}")
+                return True
+            except Exception as e:
+                logger.error(f"Failed to delete model directory: {e}")
+                return False
+
+        except Exception as e:
+            logger.error(f"Error deleting model {model_id}: {e}")
+            return False
+
     def get_download_progress(self, model_id: str) -> Dict:
         """
         获取下载进度

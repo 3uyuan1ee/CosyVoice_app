@@ -218,6 +218,37 @@ class ModelCardWidget(QWidget):
             """)
             self.download_btn.setText("DOWNLOAD")
             self.download_btn.setEnabled(True)
+            # 恢复默认按钮样式
+            self.download_btn.setStyleSheet("""
+                QPushButton {
+                    background: #1a1412;
+                    color: #c4a77d;
+                    border: 2px solid #3d2b25;
+                    border-radius: 0px;
+                    font-size: 10px;
+                    font-weight: bold;
+                    letter-spacing: 0px;
+                    padding: 4px 12px;
+                    text-align: center;
+                }
+
+                QPushButton:hover {
+                    background: #3d2b25;
+                    color: #e8d5c4;
+                    border-color: #c4a77d;
+                }
+
+                QPushButton:pressed {
+                    background: #c4a77d;
+                    color: #1a1412;
+                    border-color: #c4a77d;
+                }
+
+                QPushButton:disabled {
+                    color: #6b5c52;
+                    border-color: #2a1d19;
+                }
+            """)
             self.progress_bar.setValue(0)
             self.progress_label.setText("")
 
@@ -233,6 +264,37 @@ class ModelCardWidget(QWidget):
             """)
             self.download_btn.setText("CANCEL")
             self.download_btn.setEnabled(True)
+            # 恢复默认按钮样式
+            self.download_btn.setStyleSheet("""
+                QPushButton {
+                    background: #1a1412;
+                    color: #c4a77d;
+                    border: 2px solid #3d2b25;
+                    border-radius: 0px;
+                    font-size: 10px;
+                    font-weight: bold;
+                    letter-spacing: 0px;
+                    padding: 4px 12px;
+                    text-align: center;
+                }
+
+                QPushButton:hover {
+                    background: #3d2b25;
+                    color: #e8d5c4;
+                    border-color: #c4a77d;
+                }
+
+                QPushButton:pressed {
+                    background: #c4a77d;
+                    color: #1a1412;
+                    border-color: #c4a77d;
+                }
+
+                QPushButton:disabled {
+                    color: #6b5c52;
+                    border-color: #2a1d19;
+                }
+            """)
             self.progress_bar.setValue(progress)
             self.progress_label.setText(f"{progress}%")
 
@@ -288,5 +350,36 @@ class ModelCardWidget(QWidget):
             """)
             self.download_btn.setText("RETRY")
             self.download_btn.setEnabled(True)
+            # 恢复默认按钮样式
+            self.download_btn.setStyleSheet("""
+                QPushButton {
+                    background: #1a1412;
+                    color: #c4a77d;
+                    border: 2px solid #3d2b25;
+                    border-radius: 0px;
+                    font-size: 10px;
+                    font-weight: bold;
+                    letter-spacing: 0px;
+                    padding: 4px 12px;
+                    text-align: center;
+                }
+
+                QPushButton:hover {
+                    background: #3d2b25;
+                    color: #e8d5c4;
+                    border-color: #c4a77d;
+                }
+
+                QPushButton:pressed {
+                    background: #c4a77d;
+                    color: #1a1412;
+                    border-color: #c4a77d;
+                }
+
+                QPushButton:disabled {
+                    color: #6b5c52;
+                    border-color: #2a1d19;
+                }
+            """)
             self.progress_bar.setValue(progress)
             self.progress_label.setText(error_msg[:30] if error_msg else "FAILED")

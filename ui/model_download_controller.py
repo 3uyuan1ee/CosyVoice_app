@@ -97,6 +97,7 @@ class ModelDownloadController(QWidget):
             # 连接信号
             card.download_clicked.connect(self._on_download_requested)
             card.cancel_clicked.connect(self._on_download_cancelled)
+            card.delete_clicked.connect(self._on_delete_requested)
 
             # 添加到布局
             self.modelsContainer.layout().addWidget(card)
@@ -182,6 +183,42 @@ class ModelDownloadController(QWidget):
 
         except Exception as e:
             logger.error(f"Error cancelling download for {model_id}: {e}")
+
+    @pyqtSlot(str)
+    def _on_delete_requested(self, model_id: str):
+        """处理删除模型"""
+        try:
+            logger.info(f"Delete requested for model: {model_id}")
+
+            # 确认对话框
+            from PyQt6.QtWidgets import QMessageBox
+            reply = QMessageBox.question(
+                self,
+                "Confirm Delete",
+                "Are you sure you want to delete this model? This will free up disk space but you'll need to download again.",
+                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+                QMessageBox.StandardButton.No
+            )
+
+            if reply == QMessageBox.StandardButton.Yes:
+                # 通过服务层删除模型
+                success = self.download_service.delete_model(model_id)
+
+                if success:
+                    # 更新UI状态
+                    card = self.model_cards.get(model_id)
+                    if card:
+                        card.update_status(ModelStatus.NOT_DOWNLOADED)
+
+                    self._show_info_message(f"Model deleted successfully")
+                    logger.info(f"Model deleted: {model_id}")
+                else:
+                    self._show_error_message("Delete failed", "Failed to delete model files")
+                    logger.warning(f"Failed to delete model: {model_id}")
+
+        except Exception as e:
+            logger.error(f"Error deleting model {model_id}: {e}")
+            self._show_error_message("Delete error", str(e))
 
     @pyqtSlot(str, int, int, int)
     def _on_download_progress(self, model_id: str, current: int, total: int, percentage: int):

@@ -39,6 +39,7 @@ class MainWindow(QMainWindow):
         self.btnAudioClone.clicked.connect(self.show_audio_clone)
         self.btnModelDownload.clicked.connect(self.show_model_download)
         self.btnResults.clicked.connect(self.show_results)
+        self.btnStatus.clicked.connect(self.show_status)
 
     def show_audio_clone(self):
         """显示音频克隆页面"""
@@ -72,6 +73,24 @@ class MainWindow(QMainWindow):
     def _on_audio_generated(self, file_path: str, model_id: str, text: str):
         """音频生成完成时的处理"""
         try:
+            # 计算音频时长
+            duration = 0.0
+            try:
+                import librosa
+                audio, sr = librosa.load(file_path, sr=None)
+                duration = float(librosa.get_duration(y=audio, sr=sr))
+            except Exception as e:
+                logger.warning(f"Failed to calculate audio duration: {e}")
+
+            # 记录音频生成统计
+            try:
+                from backend.statistics_service import get_statistics_service
+                stats_service = get_statistics_service()
+                stats_service.record_audio_generation(duration, model_id)
+                logger.info(f"Audio generation recorded: {duration:.1f}s, model={model_id}")
+            except Exception as e:
+                logger.warning(f"Failed to record audio generation: {e}")
+
             # 确保结果面板已加载
             if not hasattr(self, 'result_panel'):
                 from ui.result_controller import ResultPanel
@@ -145,3 +164,28 @@ class MainWindow(QMainWindow):
 
         except Exception as e:
             MessageBoxHelper.critical(self, "Error", f"Fail to load download interface：{str(e)}")
+
+    def show_status(self):
+        """显示Status页面"""
+        try:
+            from ui.status_controller import StatusPanel
+            # 如果还没加载Status面板
+            if not hasattr(self, 'status_panel'):
+                # 清空占位符布局
+                layout = self.statusPage.layout()
+                while layout.count():
+                    item = layout.takeAt(0)
+                    widget = item.widget()
+                    if widget:
+                        widget.setParent(None)
+
+                # 创建Status面板
+                self.status_panel = StatusPanel()
+                layout.addWidget(self.status_panel)
+
+            # 切换到Status页面
+            self.stackedWidget.setCurrentIndex(4)
+            self.statusBar().showMessage("System Status", 3000)
+
+        except Exception as e:
+            MessageBoxHelper.critical(self, "Error", f"Fail to load status interface：{str(e)}")

@@ -88,7 +88,6 @@ class MessageBoxHelper:
             用户点击的按钮
         """
         msg_box = QMessageBox(parent)
-        msg_box.setIcon(QMessageBox.Icon.Critical)
         msg_box.setWindowTitle(title)
         msg_box.setText(message)
         msg_box.setStandardButtons(buttons)
@@ -116,7 +115,6 @@ class MessageBoxHelper:
             用户点击的按钮
         """
         msg_box = QMessageBox(parent)
-        msg_box.setIcon(QMessageBox.Icon.Warning)
         msg_box.setWindowTitle(title)
         msg_box.setText(message)
         msg_box.setStandardButtons(buttons)
@@ -144,7 +142,6 @@ class MessageBoxHelper:
             用户点击的按钮
         """
         msg_box = QMessageBox(parent)
-        msg_box.setIcon(QMessageBox.Icon.Information)
         msg_box.setWindowTitle(title)
         msg_box.setText(message)
         msg_box.setStandardButtons(buttons)
@@ -174,7 +171,6 @@ class MessageBoxHelper:
             用户点击的按钮
         """
         msg_box = QMessageBox(parent)
-        msg_box.setIcon(QMessageBox.Icon.Question)
         msg_box.setWindowTitle(title)
         msg_box.setText(message)
         msg_box.setStandardButtons(buttons)
@@ -188,7 +184,7 @@ class MessageBoxHelper:
         parent: Optional[QWidget],
         title: str,
         message: str,
-        icon: QMessageBox.Icon,
+        icon: QMessageBox.Icon = None,  # 保留参数但移除使用
         details: Optional[str] = None
     ) -> None:
         """
@@ -198,11 +194,10 @@ class MessageBoxHelper:
             parent: 父窗口
             title: 标题
             message: 消息内容
-            icon: 图标类型
+            icon: 图标类型（已废弃，不再使用）
             details: 详细信息（可选）
         """
         msg_box = QMessageBox(parent)
-        msg_box.setIcon(icon)
         msg_box.setWindowTitle(title)
         msg_box.setText(message)
 

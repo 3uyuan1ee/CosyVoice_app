@@ -188,19 +188,15 @@ class ErrorHandler(QObject):
             logger.info(log_msg)
 
     def _show_error_dialog(self, exc: Exception, level: ErrorLevel):
-        """显示错误对话框"""
+        """显示错误对话框（无图标）"""
         # 确定对话框类型
         if level == ErrorLevel.CRITICAL or level == ErrorLevel.FATAL:
-            icon = QMessageBox.Icon.Critical
             title = "严重错误"
         elif level == ErrorLevel.ERROR:
-            icon = QMessageBox.Icon.Warning
             title = "错误"
         elif level == ErrorLevel.WARNING:
-            icon = QMessageBox.Icon.Warning
             title = "警告"
         else:
-            icon = QMessageBox.Icon.Information
             title = "提示"
 
         # 构建消息
@@ -213,13 +209,13 @@ class ErrorHandler(QObject):
         if hasattr(exc, 'recovery_hint') and exc.recovery_hint:
             details_text += f"建议:\n{exc.recovery_hint}"
 
-        # 使用 MessageBoxHelper 显示对话框
+        # 使用 MessageBoxHelper 显示对话框（不传递icon参数）
         MessageBoxHelper.with_details(
             self._parent_widget,
             title,
             message,
-            icon,
-            details_text if details_text else None
+            icon=None,  # 不使用图标
+            details=details_text if details_text else None
         )
 
     def get_error_statistics(self) -> dict:

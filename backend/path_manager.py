@@ -101,6 +101,10 @@ class PathManager:
         """获取下载缓存目录"""
         return self.get_cosyvoice_path("download_cache")
 
+    def get_modelscope_cache_path(self):
+        """获取ModelScope缓存目录"""
+        return self.get_root_begin_path("modelscope_cache")
+
     # ==================== 音频文件路径 ====================
 
     def get_voices_path(self, *path_parts):

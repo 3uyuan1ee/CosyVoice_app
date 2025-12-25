@@ -157,6 +157,10 @@ def cleanup_and_exit(exit_code: int = 0):
                     if hasattr(main_window.model_download_panel, 'cleanup'):
                         main_window.model_download_panel.cleanup()
 
+                # 清理Status面板
+                if hasattr(main_window, 'status_panel'):
+                    main_window.status_panel.cleanup()
+
                 logger.info("主窗口资源已清理")
             except Exception as e:
                 logger.error(f"清理主窗口失败: {e}")
@@ -269,6 +273,15 @@ def main():
         main_window.show()
         main_window.raise_()  # 将窗口提升到前台
         main_window.activateWindow()  # 激活窗口
+
+        # 记录应用启动
+        try:
+            from backend.statistics_service import get_statistics_service
+            stats_service = get_statistics_service()
+            stats_service.record_launch()
+            logger.info("应用启动已记录")
+        except Exception as e:
+            logger.warning(f"记录应用启动失败: {e}")
 
         # 确保窗口在屏幕中央
         screen = QApplication.primaryScreen()

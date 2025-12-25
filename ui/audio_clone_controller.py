@@ -4,21 +4,23 @@
 
 from PyQt6.QtWidgets import (QWidget, QFileDialog, QMessageBox,
                              QApplication, QStyle)
-from PyQt6.QtCore import QThread, pyqtSlot, Qt
+from PyQt6.QtCore import QThread, pyqtSlot, Qt, pyqtSignal
 from PyQt6.uic import loadUi
-from PyQt6.QtMultimedia import QMediaPlayer
 import os
 from loguru import logger
 from typing import Optional
 
 from ui.audio_generation_worker import AudioGenerationWorker
-from backend.audio_player_service import get_audio_player_service
 from backend.file_service import get_file_service
 from backend.path_manager import PathManager
+from backend.model_download_service import get_model_download_service, ModelDownloadStatus
 
 
 class AudioClonePanel(QWidget):
     """音频克隆面板控制器"""
+
+    # 定义信号：生成完成时通知
+    generation_completed = pyqtSignal(str, str, str)  # file_path, model_id, text
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -29,33 +31,85 @@ class AudioClonePanel(QWidget):
         loadUi(ui_path, self)
 
         # 服务层
-        self.audio_player = get_audio_player_service()
         self.file_service = get_file_service()
         self.path_manager = PathManager()
+        self.model_download_service = get_model_download_service()
+
+        # 设置 path_manager 到 download_service（关键！）
+        self.model_download_service.set_path_manager(self.path_manager)
 
         # 状态变量
         self.ref_audio_path: Optional[str] = None
         self.generated_audio_path: Optional[str] = None
         self.generation_worker: Optional[AudioGenerationWorker] = None
-        self.is_playing: bool = False
 
         # 音调调整值
         self.pitch_value = 0
 
-        # 连接音频播放器信号
-        self._connect_player_signals()
+        # 选中的模型
+        self.selected_model_id: Optional[str] = None
+
+        # 初始化模型选择
+        self._init_model_selection()
 
         # 连接UI信号
         self.connect_signals()
 
+        # 初始化按钮状态
+        self.update_generate_button()
+
         logger.info("AudioClonePanel initialized")
 
-    def _connect_player_signals(self):
-        """连接音频播放器信号"""
-        self.audio_player.signals.position_changed.connect(self._on_playback_position_changed)
-        self.audio_player.signals.duration_changed.connect(self._on_playback_duration_changed)
-        self.audio_player.signals.playback_state_changed.connect(self._on_playback_state_changed)
-        self.audio_player.signals.error_occurred.connect(self._on_playback_error)
+    def _init_model_selection(self):
+        """初始化模型选择下拉框"""
+        try:
+            available_models = self.model_download_service.get_available_models()
+
+            # 清空下拉框
+            self.modelComboBox.clear()
+
+            # 添加模型到下拉框
+            for model in available_models:
+                self.modelComboBox.addItem(model.name, model.id)
+
+            # 默认选择第一个已下载的模型
+            for i, model in enumerate(available_models):
+                status = self.model_download_service.check_model_status(model.id)
+                if status == ModelDownloadStatus.DOWNLOADED:
+                    self.modelComboBox.setCurrentIndex(i)
+                    self.selected_model_id = model.id
+                    logger.info(f"Selected default model: {model.name}")
+                    break
+
+            # 如果没有已下载的模型，选择第一个
+            if self.selected_model_id is None and available_models:
+                self.selected_model_id = available_models[0].id
+
+            # 连接信号
+            self.modelComboBox.currentIndexChanged.connect(self._on_model_changed)
+
+            logger.info(f"Model selection initialized with {len(available_models)} models")
+            logger.info(f"Selected model: {self.selected_model_id}")
+
+            # 初始化完成后更新按钮状态
+            self.update_generate_button()
+
+        except Exception as e:
+            logger.error(f"Error initializing model selection: {e}")
+
+    def _on_model_changed(self, index: int):
+        """模型选择变化"""
+        try:
+            if index >= 0:
+                model_id = self.modelComboBox.itemData(index)
+                self.selected_model_id = model_id
+                logger.info(f"Model changed to: {model_id}")
+
+                # 更新生成按钮状态
+                self.update_generate_button()
+
+        except Exception as e:
+            logger.error(f"Error on model changed: {e}")
 
     def connect_signals(self):
         """连接UI信号和槽"""
@@ -64,12 +118,6 @@ class AudioClonePanel(QWidget):
 
         # 生成控制
         self.btnGenerate.clicked.connect(self.generate_audio)
-
-        # 播放控制
-        self.btnPlay.clicked.connect(self.toggle_playback)
-
-        # 保存控制
-        self.btnSave.clicked.connect(self.save_audio)
 
         # 音调调整
         self.pitchSlider.valueChanged.connect(self.update_pitch_value)
@@ -116,10 +164,68 @@ class AudioClonePanel(QWidget):
         """更新生成按钮状态"""
         has_text = bool(self.textInput.toPlainText().strip())
         has_ref_audio = bool(self.ref_audio_path)
+        has_model = bool(self.selected_model_id)
         is_not_generating = (self.generation_worker is None or
                              not self.generation_worker.isRunning())
 
-        self.btnGenerate.setEnabled(has_text and has_ref_audio and is_not_generating)
+        # 检查选中的模型是否已下载
+        model_available = False
+        model_status = None
+        if has_model:
+            try:
+                model_status = self.model_download_service.check_model_status(self.selected_model_id)
+                model_available = (model_status == ModelDownloadStatus.DOWNLOADED)
+                logger.info(f"[Button Check] Model: {self.selected_model_id}, Status: {model_status}, Available: {model_available}")
+
+                # 额外诊断：检查模型路径
+                if self.model_download_service._path_manager:
+                    path_methods = {
+                        "cosyvoice3_2512": self.model_download_service._path_manager.get_cosyvoice3_2512_model_path,
+                        "cosyvoice2": self.model_download_service._path_manager.get_cosyvoice2_model_path,
+                        "cosyvoice_300m": self.model_download_service._path_manager.get_cosyvoice_300m_model_path,
+                        "cosyvoice_300m_sft": self.model_download_service._path_manager.get_cosyvoice_300m_sft_model_path,
+                        "cosyvoice_300m_instruct": self.model_download_service._path_manager.get_cosyvoice_300m_instruct_model_path,
+                        "cosyvoice_ttsfrd": self.model_download_service._path_manager.get_cosyvoice_ttsfrd_model_path,
+                    }
+                    path_method = path_methods.get(self.selected_model_id)
+                    if path_method:
+                        model_path = path_method()
+                        import os
+                        exists = os.path.exists(model_path)
+                        logger.info(f"[Button Check] Model path: {model_path}, Exists: {exists}")
+            except Exception as e:
+                logger.error(f"[Button Check] Error checking model status: {e}")
+
+        # 启用生成按钮
+        should_enable = has_text and has_ref_audio and has_model and model_available and is_not_generating
+        self.btnGenerate.setEnabled(should_enable)
+
+        # 记录状态
+        logger.info(f"[Button Check] Text: {has_text}, Audio: {has_ref_audio}, Model: {has_model}, Available: {model_available}, NotGenerating: {is_not_generating}")
+        logger.info(f"[Button Check] Button enabled: {should_enable}")
+
+        # 添加工具提示，说明为什么按钮不可用
+        if not should_enable:
+            reasons = []
+            if not has_text:
+                reasons.append("请输入要合成的文本")
+            if not has_ref_audio:
+                reasons.append("请选择参考音频文件")
+            if not has_model:
+                reasons.append("请选择模型")
+            if has_model and not model_available:
+                reasons.append(f"选择的模型未下载（当前状态: {model_status}），请先在模型下载页面下载")
+            if not is_not_generating:
+                reasons.append("正在生成音频，请等待")
+
+            if reasons:
+                tooltip = " | ".join(reasons)
+                self.btnGenerate.setToolTip(tooltip)
+                logger.info(f"[Button Check] Tooltip: {tooltip}")
+            else:
+                self.btnGenerate.setToolTip("")
+        else:
+            self.btnGenerate.setToolTip("点击开始生成音频")
 
     def generate_audio(self):
         """生成音频"""
@@ -134,21 +240,26 @@ class AudioClonePanel(QWidget):
                 QMessageBox.warning(self, "Warning", "Please enter text to synthesize")
                 return
 
+            if not self.selected_model_id:
+                QMessageBox.warning(self, "Warning", "Please select a model")
+                return
+
+            # 检查模型是否已下载
+            model_status = self.model_download_service.check_model_status(self.selected_model_id)
+            if model_status != ModelDownloadStatus.DOWNLOADED:
+                QMessageBox.warning(self, "Warning", "Selected model is not downloaded. Please download it first.")
+                return
+
             # 禁用生成按钮
             self.btnGenerate.setEnabled(False)
             self.progressBar.setValue(0)
-            self.btnPlay.setEnabled(False)
-            self.btnSave.setEnabled(False)
-
-            # 停止当前播放
-            if self.is_playing:
-                self.audio_player.stop()
 
             # 创建生成工作线程
             self.generation_worker = AudioGenerationWorker(
                 reference_audio=self.ref_audio_path,
                 text=text,
                 pitch_shift=self.pitch_value,
+                model_type=self.selected_model_id,
                 parent=self
             )
 
@@ -161,7 +272,7 @@ class AudioClonePanel(QWidget):
             # 启动生成
             self.generation_worker.start()
 
-            logger.info("Audio generation started")
+            logger.info(f"Audio generation started with model: {self.selected_model_id}")
 
         except Exception as e:
             logger.error(f"Error starting audio generation: {e}")
@@ -196,15 +307,21 @@ class AudioClonePanel(QWidget):
         if success:
             self.generated_audio_path = output_path
 
-            # 启用播放和保存按钮
-            self.btnPlay.setEnabled(True)
-            self.btnSave.setEnabled(True)
-
             # 更新进度条
             self.progressBar.setValue(100)
 
+            # 获取合成文本
+            text = self.textInput.toPlainText().strip()
+
+            # 发送生成完成信号
+            self.generation_completed.emit(output_path, self.selected_model_id or "", text)
+
             # 显示成功消息
-            QMessageBox.information(self, "Success", message)
+            QMessageBox.information(
+                self,
+                "Success",
+                f"{message}\n\nThe file has been added to the Results page."
+            )
 
             logger.info(f"Audio generation completed: {output_path}")
         else:
@@ -235,115 +352,11 @@ class AudioClonePanel(QWidget):
             self.generation_worker.wait()
             self.generation_worker = None
 
-    def toggle_playback(self):
-        """切换播放状态"""
-        try:
-            if not self.generated_audio_path:
-                QMessageBox.warning(self, "Warning", "No audio to play")
-                return
-
-            if not os.path.exists(self.generated_audio_path):
-                QMessageBox.warning(self, "Warning", "Generated audio file not found")
-                return
-
-            # 根据当前状态决定播放或暂停
-            if self.is_playing and self.audio_player.get_current_file() == self.generated_audio_path:
-                # 暂停
-                self.audio_player.pause()
-            else:
-                # 加载并播放
-                if self.audio_player.get_current_file() != self.generated_audio_path:
-                    if not self.audio_player.load_file(self.generated_audio_path):
-                        QMessageBox.critical(self, "Error", "Failed to load audio file")
-                        return
-
-                self.audio_player.play()
-
-            logger.info(f"Playback toggled: current state = {self.is_playing}")
-
-        except Exception as e:
-            logger.error(f"Error toggling playback: {e}")
-            QMessageBox.critical(self, "Error", f"Playback error: {str(e)}")
-
-    def _on_playback_position_changed(self, position: int):
-        """处理播放位置变化"""
-        # 可以在这里更新进度条或其他UI元素
-        pass
-
-    def _on_playback_duration_changed(self, duration: int):
-        """处理音频时长变化"""
-        logger.debug(f"Audio duration: {duration}ms")
-
-    def _on_playback_state_changed(self, state: str):
-        """处理播放状态变化"""
-        if state == "playing":
-            self.is_playing = True
-            # 设置暂停图标
-            self.btnPlay.setText("PAUSE")
-        else:
-            self.is_playing = False
-            # 设置播放图标
-            self.btnPlay.setText("PLAY")
-
-        logger.debug(f"Playback state: {state}")
-
-    def _on_playback_error(self, error: str):
-        """处理播放错误"""
-        QMessageBox.warning(self, "Playback Error", error)
-        self.is_playing = False
-        self.btnPlay.setText("PLAY")
-
-    def save_audio(self):
-        """保存音频文件"""
-        try:
-            if not self.generated_audio_path:
-                QMessageBox.warning(self, "Warning", "No audio to save")
-                return
-
-            if not os.path.exists(self.generated_audio_path):
-                QMessageBox.warning(self, "Warning", "Generated audio file not found")
-                return
-
-            # 生成默认文件名
-            base_name = os.path.basename(self.generated_audio_path)
-            default_name = self.file_service.generate_unique_filename(base_name)
-
-            # 显示保存对话框
-            save_path = self.file_service.save_audio_file_dialog(
-                parent=self,
-                default_name=default_name
-            )
-
-            if save_path:
-                # 保存文件
-                success, message = self.file_service.save_file(
-                    source_path=self.generated_audio_path,
-                    target_path=save_path,
-                    overwrite=False
-                )
-
-                if success:
-                    QMessageBox.information(self, "Success", message)
-                    logger.info(f"Audio saved to: {save_path}")
-                else:
-                    QMessageBox.warning(self, "Save Failed", message)
-                    logger.warning(f"Failed to save audio: {message}")
-
-        except Exception as e:
-            logger.error(f"Error saving audio: {e}")
-            QMessageBox.critical(self, "Error", f"Failed to save audio: {str(e)}")
-
     def cleanup(self):
         """清理资源"""
         logger.info("Cleaning up AudioClonePanel")
-
-        # 停止播放
-        self.audio_player.stop()
 
         # 停止生成任务
         if self.generation_worker and self.generation_worker.isRunning():
             self.generation_worker.cancel()
             self.generation_worker.wait()
-
-        # 清理播放器资源
-        self.audio_player.cleanup()

@@ -258,6 +258,9 @@ class AudioValidator(LoggerMixin):
             try:
                 # 对于支持的格式，先尝试使用torchaudio加载
                 waveform, sample_rate = torchaudio.load(audio_path)
+                # 确保tensor在CPU上
+                if waveform.device.type != 'cpu':
+                    waveform = waveform.cpu()
 
                 # 从加载的数据中获取信息
                 num_channels = waveform.shape[0] if waveform.dim() >= 2 else 1
@@ -837,10 +840,11 @@ class CosyService(LoggerMixin):
                 if model_dir is None:
                     model_dir = self.path_manager.get_cosyvoice3_2512_model_path()
 
-                # 检查模型是否存在，如果不存在则尝试自动下载
+                # 检查模型是否存在，如果不存在则提示用户下载
                 if not os.path.exists(model_dir):
-                    self.logger.info("[CosyService] 模型目录不存在，尝试自动下载...")
-                    self._auto_download_required_models()
+                    self.logger.warning("[CosyService] 模型目录不存在，请先在模型下载页面下载所需模型")
+                    # 自动下载已禁用，用户需要通过模型下载页面手动下载
+                    # self._auto_download_required_models()
 
                 # 初始化模型相关模块
                 if os.path.exists(model_dir):
@@ -860,34 +864,31 @@ class CosyService(LoggerMixin):
 
                         if not is_complete:
                             self.logger.error(f"[CosyService] 模型不完整，缺失 {len(missing_files)} 个文件")
-                            self.logger.error("[CosyService] 将尝试自动重新下载模型...")
-
-                            # 尝试重新下载
-                            try:
-                                self._auto_download_required_models()
-
-                                # 下载后重新检查
-                                is_complete_after, _, _ = self.path_manager.check_cosyvoice3_model_integrity(model_dir)
-
-                                if is_complete_after:
-                                    self.logger.info("[CosyService] 模型下载完成，重新加载...")
-                                    self.model_manager = ModelManager(
-                                        model_dir, self.device_manager,
-                                        load_vllm=load_vllm,
-                                        load_jit=load_jit,
-                                        load_trt=load_trt,
-                                        fp16=fp16,
-                                        trt_concurrent=trt_concurrent
-                                    )
-                                    self.voice_cloner = VoiceCloner(self.model_manager, self.audio_processor)
-                                else:
-                                    self.logger.error("[CosyService] 模型下载后仍不完整，请手动检查")
-                                    self.model_manager = None
-                                    self.voice_cloner = None
-                            except Exception as download_error:
-                                self.logger.error(f"[CosyService] 自动下载失败: {download_error}")
-                                self.model_manager = None
-                                self.voice_cloner = None
+                            self.logger.error("[CosyService] 请在模型下载页面重新下载模型")
+                            # 自动重新下载已禁用
+                            # try:
+                            #     self._auto_download_required_models()
+                            #     # 下载后重新检查
+                            #     is_complete_after, _, _ = self.path_manager.check_cosyvoice3_model_integrity(model_dir)
+                            #     if is_complete_after:
+                            #         self.logger.info("[CosyService] 模型下载完成，重新加载...")
+                            #         self.model_manager = ModelManager(
+                            #             model_dir, self.device_manager,
+                            #             load_vllm=load_vllm,
+                            #             load_jit=load_jit,
+                            #             load_trt=load_trt,
+                            #             fp16=fp16,
+                            #             trt_concurrent=trt_concurrent
+                            #         )
+                            #         self.voice_cloner = VoiceCloner(self.model_manager, self.audio_processor)
+                            #     else:
+                            #         self.logger.error("[CosyService] 模型下载后仍不完整，请手动检查")
+                            #         self.model_manager = None
+                            #         self.voice_cloner = None
+                            # except Exception as download_error:
+                            #     self.logger.error(f"[CosyService] 自动下载失败: {download_error}")
+                            #     self.model_manager = None
+                            #     self.voice_cloner = None
                         else:
                             # 其他模型加载错误
                             self.logger.error(f"[CosyService] 模型加载失败: {e}")
@@ -1090,49 +1091,10 @@ class CosyService(LoggerMixin):
         Returns:
             预处理后的音频路径，失败时返回 None
         """
-        try:
-            from .audio_preprocessor import AudioPreprocessorFactory, PreprocessConfig, ProcessingMode
-
-            self.logger.info(f"[CosyService] 开始预处理参考音频: {audio_path}")
-
-            # 创建预处理器，使用 PathManager 管理输出路径
-            preprocessor = AudioPreprocessorFactory.create(
-                output_dir=self.path_manager.get_ref_voice_path()
-            )
-
-            # 配置预处理参数
-            config = PreprocessConfig(
-                target_sample_rate=24000,  # CosyVoice 最优采样率
-                trim=True,                  # 去除首尾静音
-                denoise=True,               # 降噪
-                normalize=True,             # 归一化音量
-                mode=ProcessingMode.BALANCED
-            )
-
-            # 执行预处理
-            result = preprocessor.preprocess(audio_path, config=config)
-
-            if result.success:
-                self.logger.info(f"[CosyService] 预处理成功: {result.output_path}")
-                self.logger.info(f"  质量评分: {result.quality_score:.1f}/100")
-                self.logger.info(f"  处理时间: {result.processing_time:.3f}s")
-
-                if result.warnings:
-                    for warning in result.warnings:
-                        self.logger.warning(f"  警告: {warning}")
-
-                return result.output_path
-            else:
-                self.logger.warning(f"[CosyService] 预处理失败: {result.error_message}")
-                self.logger.warning(f"[CosyService] 将使用原始音频: {audio_path}")
-                return None
-
-        except ImportError:
-            self.logger.warning("[CosyService] audio_preprocessor 模块不可用，跳过预处理")
-            return None
-        except Exception as e:
-            self.logger.error(f"[CosyService] 预处理异常: {e}")
-            return None
+        # 暂时禁用预处理以避免bus error
+        # CosyVoice模型内置了音频处理功能
+        self.logger.info(f"[CosyService] 跳过预处理，使用原始音频: {audio_path}")
+        return None
 
     def get_available_models(self) -> Dict[str, Any]:
         """获取可用模型列表"""

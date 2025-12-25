@@ -10,7 +10,7 @@ import time
 
 class DownloadSignals(QObject):
     """下载信号集合"""
-    progress = pyqtSignal(str, int, str, int)  # model_id, current, total, percentage
+    progress = pyqtSignal(str, int, int, int)  # model_id, current, total, percentage
     finished = pyqtSignal(str, bool, str)      # model_id, success, error_msg
     status_update = pyqtSignal(str, str)        # model_id, status_text
 
@@ -31,6 +31,7 @@ class ModelDownloadWorker(QThread):
         self.signals = DownloadSignals()
         self._is_running = True
         self._is_cancelled = False
+        self._download_error = None  # 存储下载错误信息
 
     def run(self):
         """执行下载任务"""
@@ -87,15 +88,20 @@ class ModelDownloadWorker(QThread):
                 model_type, progress_callback
             )
 
-            if self._is_cancelled:
-                self.signals.finished.emit(self.model_id, False, "Download cancelled")
-                self.signals.status_update.emit(self.model_id, "Cancelled")
-            elif success:
+            # 根据结果发送信号
+            if success:
                 self.signals.finished.emit(self.model_id, True, "")
                 self.signals.status_update.emit(self.model_id, "Download complete")
+                logger.info(f"Download finished successfully for {self.model_name}")
             else:
-                self.signals.finished.emit(self.model_id, False, "Download failed")
-                self.signals.status_update.emit(self.model_id, "Download failed")
+                # 下载失败或被取消
+                if self._is_cancelled:
+                    self.signals.finished.emit(self.model_id, False, "Download cancelled")
+                    logger.info(f"Download was cancelled for {self.model_name}")
+                else:
+                    error_msg = self._download_error if self._download_error else "Download failed"
+                    self.signals.finished.emit(self.model_id, False, error_msg)
+                    logger.error(f"Download failed for {self.model_name}: {error_msg}")
 
         except Exception as e:
             logger.error(f"Download error for {self.model_name}: {str(e)}")
@@ -109,7 +115,7 @@ class ModelDownloadWorker(QThread):
         使用轮询方式获取下载进度并更新UI
         """
         try:
-            from backend.model_download_manager import DownloadSource
+            from backend.model_download_manager import DownloadSource, DownloadCancelledError
 
             self.signals.status_update.emit(self.model_id, "Connecting to server...")
 
@@ -132,8 +138,14 @@ class ModelDownloadWorker(QThread):
                         install_deps=True
                     )
                     download_result["success"] = success
+                    logger.info(f"Download thread completed with success={success}")
+                except DownloadCancelledError:
+                    logger.info("Download was cancelled (caught in download thread)")
+                    download_result["success"] = False
+                    download_result["error"] = "Cancelled"
                 except Exception as e:
                     logger.error(f"Download thread error: {e}")
+                    download_result["success"] = False
                     download_result["error"] = str(e)
                 finally:
                     download_complete.set()
@@ -146,6 +158,7 @@ class ModelDownloadWorker(QThread):
             last_progress = 0
             poll_count = 0
             max_polls = 600  # 最多轮询10分钟 (600次 * 1秒)
+            user_cancelled = False
 
             while not download_complete.is_set() and not self._is_cancelled:
                 poll_count += 1
@@ -176,20 +189,28 @@ class ModelDownloadWorker(QThread):
                     logger.warning("Download polling timeout")
                     break
 
+            # 检查是否被用户取消
+            if self._is_cancelled:
+                user_cancelled = True
+                logger.info("Download was cancelled by user, waiting for background thread to complete...")
+                self.signals.status_update.emit(self.model_id, "Cancelling...")
+
             # 等待下载线程完成
             thread.join(timeout=5.0)
 
             # 检查下载结果
-            if self._is_cancelled:
-                logger.info("Download was cancelled")
-                return False
-
             if download_result.get("success"):
                 logger.info(f"Download completed successfully for {model_type.value}")
+                # 即使之前被取消，如果下载成功，也返回成功
+                if user_cancelled:
+                    logger.info("Download completed despite user cancellation")
+                    self.signals.status_update.emit(self.model_id, "Download completed")
+                self._download_error = None
                 return True
             else:
                 error = download_result.get("error", "Unknown error")
                 logger.error(f"Download failed: {error}")
+                self._download_error = error
                 return False
 
         except Exception as e:
@@ -201,6 +222,27 @@ class ModelDownloadWorker(QThread):
         logger.info(f"Cancelling download for: {self.model_name}")
         self._is_cancelled = True
         self._is_running = False
+
+        # 调用下载管理器的取消方法
+        try:
+            from backend.model_download_manager import ModelType
+
+            # 映射model_id到ModelType枚举
+            model_type_map = {
+                "cosyvoice3_2512": ModelType.COSYVOICE3_2512,
+                "cosyvoice2": ModelType.COSYVOICE2,
+                "cosyvoice_300m": ModelType.COSYVOICE_300M,
+                "cosyvoice_300m_sft": ModelType.COSYVOICE_300M_SFT,
+                "cosyvoice_300m_instruct": ModelType.COSYVOICE_300M_INSTRUCT,
+                "cosyvoice_ttsfrd": ModelType.COSYVOICE_TTSFRD,
+            }
+
+            model_type = model_type_map.get(self.model_id)
+            if model_type and self.download_manager:
+                self.download_manager.cancel_download(model_type)
+                logger.info(f"Called download_manager.cancel_download for {self.model_id}")
+        except Exception as e:
+            logger.error(f"Error calling download_manager.cancel_download: {e}")
 
     def stop(self):
         """停止线程"""

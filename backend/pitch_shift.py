@@ -438,7 +438,23 @@ class PitchShifter:
             raise AudioLoadError(f"文件不存在: {filepath}")
 
         try:
-            audio_data, sample_rate = librosa.load(filepath, sr=None)
+            # 优先使用torchaudio，避免librosa在macOS MPS环境下的bus error
+            try:
+                import torchaudio
+                import torch
+                waveform, sample_rate = torchaudio.load(filepath)
+                # 确保tensor在CPU上，避免MPS相关的问题
+                if waveform.device.type != 'cpu':
+                    waveform = waveform.cpu()
+                # 转换为numpy数组并转为单声道
+                audio_data = waveform.numpy()
+                if audio_data.shape[0] > 1:
+                    audio_data = audio_data.mean(axis=0)  # 转为单声道
+                else:
+                    audio_data = audio_data[0]
+            except ImportError:
+                # 使用librosa作为备选
+                audio_data, sample_rate = librosa.load(filepath, sr=None)
             return audio_data, sample_rate
         except Exception as e:
             raise AudioLoadError(f"加载音频失败: {str(e)}") from e

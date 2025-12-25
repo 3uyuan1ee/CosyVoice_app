@@ -12,9 +12,22 @@ CosyVoice_app - PyQt6 主程序入口
 
 import sys
 import signal
+import os
+import multiprocessing
 from pathlib import Path
 from loguru import logger
 from PyQt6.QtWidgets import QApplication
+
+# 修复macOS上soundfile与PyQt6的多进程冲突
+# 必须在创建QApplication之前设置
+try:
+    if sys.platform == 'darwin':
+        # 设置multiprocessing使用spawn方式，避免fork方式与PyQt6冲突
+        multiprocessing.set_start_method('spawn', force=False)
+        # 设置环境变量，防止libsndfile使用多进程
+        os.environ['SF_ALLOW_MULTIPROCESSING'] = '0'
+except RuntimeError:
+    pass  # 已经设置过
 
 # 添加项目根目录到路径
 PROJECT_ROOT = Path(__file__).parent
@@ -46,7 +59,7 @@ def setup_logging():
 
     path_manager = PathManager()
     log_dir = path_manager.get_log_path()
-    log_file = log_dir / "cosyvoice_app.log"
+    log_file = Path(log_dir) / "cosyvoice_app.log"
 
     # 移除默认处理器
     logger.remove()
@@ -253,6 +266,17 @@ def main():
         # 9. 显示主窗口
         logger.info("显示主窗口...")
         main_window.show()
+        main_window.raise_()  # 将窗口提升到前台
+        main_window.activateWindow()  # 激活窗口
+
+        # 确保窗口在屏幕中央
+        screen = QApplication.primaryScreen()
+        if screen:
+            screen_geometry = screen.availableGeometry()
+            window_geometry = main_window.geometry()
+            x = (screen_geometry.width() - window_geometry.width()) // 2
+            y = (screen_geometry.height() - window_geometry.height()) // 2
+            main_window.move(x, y)
 
         # 10. 打印启动信息
         logger.info("=" * 60)

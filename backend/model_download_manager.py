@@ -477,19 +477,51 @@ class ModelDownloadManager(LoggerMixin):
                     zip_ref.extractall(model_path)
                 self.logger.info("ttsfrd资源文件解压完成")
 
-            # 安装依赖包
-            dependency_files = [
-                "ttsfrd_dependency-0.1-py3-none-any.whl",
-                "ttsfrd-0.4.2-cp310-cp310-linux_x86_64.whl"
+            # 检测当前平台
+            import platform
+            current_system = platform.system().lower()
+            current_machine = platform.machine().lower()
+
+            # 确定平台标识符（用于wheel包匹配）
+            if current_system == "linux":
+                platform_tag = "linux_x86_64"
+            elif current_system == "darwin":
+                # macOS: 可能是 x86_64 或 arm64
+                platform_tag = "macosx"
+            elif current_system == "windows":
+                platform_tag = "win_amd64"
+            else:
+                platform_tag = current_system
+
+            self.logger.info(f"当前平台: {current_system} {current_machine}, 平台标签: {platform_tag}")
+
+            # 平台特定依赖包（只安装匹配的）
+            platform_deps = [
+                "ttsfrd-0.4.2-cp310-cp310-linux_x86_64.whl",  # Linux
+                "ttsfrd-0.4.2-cp38-cp38-linux_x86_64.whl",      # Linux (Python 3.8)
+                # 如果有其他平台的包，可以在这里添加
             ]
 
-            for dep_file in dependency_files:
-                dep_path = os.path.join(model_path, dep_file)
-                if os.path.exists(dep_path):
-                    self.logger.info(f"安装依赖包: {dep_file}")
-                    subprocess.run([
-                        sys.executable, "-m", "pip", "install", dep_path, "--force-reinstall"
-                    ], check=True)
+            # 安装平台特定依赖（仅当平台匹配时）
+            platform_installed = False
+            for dep_file in platform_deps:
+                # 检查文件是否包含当前平台标签
+                if platform_tag in dep_file.lower():
+                    dep_path = os.path.join(model_path, dep_file)
+                    if os.path.exists(dep_path):
+                        self.logger.info(f"安装平台依赖包: {dep_file}")
+                        subprocess.run([
+                            sys.executable, "-m", "pip", "install", dep_path, "--force-reinstall"
+                        ], check=True)
+                        platform_installed = True
+                        break
+
+            # 如果当前平台没有对应的平台特定包，发出警告但不失败
+            if not platform_installed and platform_tag != "linux_x86_64":
+                self.logger.warning(
+                    f"当前平台 ({current_system}) 没有对应的 ttsfrd 平台特定包。"
+                    f"ttsfrd 功能可能不可用，但其他功能正常。"
+                )
 
             self.logger.info("ttsfrd依赖安装完成")
             return True

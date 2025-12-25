@@ -50,6 +50,16 @@ class AudioClonePanel(QWidget):
         # 选中的模型
         self.selected_model_id: Optional[str] = None
 
+        # 语言映射（UI索引 -> 语言代码）
+        self.language_map = {
+            0: None,  # Auto Detect
+            1: 'zh',  # Chinese
+            2: 'en',  # English
+            3: 'ja',  # Japanese
+            4: 'ko',  # Korean
+        }
+        self.selected_language: Optional[str] = None  # 当前选中的语言
+
         # 初始化模型选择
         self._init_model_selection()
 
@@ -112,6 +122,17 @@ class AudioClonePanel(QWidget):
         except Exception as e:
             logger.error(f"Error on model changed: {e}")
 
+    def _on_language_changed(self, index: int):
+        """语言选择变化"""
+        try:
+            if index >= 0:
+                self.selected_language = self.language_map.get(index)
+                lang_display = self.languageComboBox.itemText(index)
+                logger.info(f"Language changed to: {lang_display} (code: {self.selected_language})")
+
+        except Exception as e:
+            logger.error(f"Error on language changed: {e}")
+
     def connect_signals(self):
         """连接UI信号和槽"""
         # 文件选择
@@ -125,6 +146,9 @@ class AudioClonePanel(QWidget):
 
         # 文本输入
         self.textInput.textChanged.connect(self.update_generate_button)
+
+        # 语言选择
+        self.languageComboBox.currentIndexChanged.connect(self._on_language_changed)
 
     def select_reference_audio(self):
         """选择参考音频文件"""
@@ -261,6 +285,7 @@ class AudioClonePanel(QWidget):
                 text=text,
                 pitch_shift=self.pitch_value,
                 model_type=self.selected_model_id,
+                language=self.selected_language,  # 传递语言参数
                 parent=self
             )
 

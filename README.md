@@ -1,4 +1,9 @@
-![illustrator.png](resources/png/illustrator.png)
+<p align="center">
+  <img src="resources/png/start.png" alt="start.png" width="400" height="240">
+</p>
+
+
+
 # CosyVoice Desktop Application
 
 A **PyQt6-based** cross-platform desktop interface for **CosyVoice3** intelligent voice synthesis, featuring a unique **pixel-art** aesthetic.
@@ -26,6 +31,11 @@ The application follows a clean layered structure to ensure stability and perfor
 
 ---
 
+![voice_clone.png](resources/png/voice_clone.png)
+
+---
+
+![model_download.png](resources/png/model_download.png)
 ## Usage Guide
 
 ### Audio Cloning

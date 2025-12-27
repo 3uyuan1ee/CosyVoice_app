@@ -448,12 +448,26 @@ class ModelDownloadManager(LoggerMixin):
                 "campplus.onnx",         # 说话人编码器
                 "speech_tokenizer_v3.onnx"  # 语音 tokenizer
             ]
-        elif model_type in [ModelType.COSYVOICE2, ModelType.COSYVOICE_300M,
-                            ModelType.COSYVOICE_300M_SFT, ModelType.COSYVOICE_300M_INSTRUCT]:
-            # CosyVoice/CosyVoice2 模型文件
+        elif model_type == ModelType.COSYVOICE2:
+            # CosyVoice2 模型文件
             required_files = [
-                "config.yaml",
-                "pytorch_model.bin"
+                "cosyvoice2.yaml",
+                "llm.pt",
+                "flow.pt",
+                "hift.pt",
+                "campplus.onnx",
+                "speech_tokenizer_v1.onnx"
+            ]
+        elif model_type in [ModelType.COSYVOICE_300M,
+                            ModelType.COSYVOICE_300M_SFT, ModelType.COSYVOICE_300M_INSTRUCT]:
+            # CosyVoice1 模型文件 (300M 系列)
+            required_files = [
+                "cosyvoice.yaml",
+                "llm.pt",
+                "flow.pt",
+                "hift.pt",
+                "campplus.onnx",
+                "speech_tokenizer_v1.onnx"
             ]
         elif model_type == ModelType.COSYVOICE_TTSFRD:
             # TTSFRD 资源文件

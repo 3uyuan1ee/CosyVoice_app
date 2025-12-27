@@ -165,9 +165,33 @@ class PathManager:
 
     # ==================== CosyVoice 模型完整性检查 ====================
 
+    def _detect_model_type_from_path(self, model_path: str) -> str:
+        """根据模型路径检测模型类型"""
+        dir_name = os.path.basename(model_path)
+
+        # 根据目录名称映射到模型类型
+        if '2512' in dir_name or 'CosyVoice3' in dir_name:
+            return 'cosyvoice3'
+        elif 'CosyVoice2' in dir_name:
+            return 'cosyvoice2'
+        elif '300M' in dir_name or 'SFT' in dir_name or 'Instruct' in dir_name:
+            return 'cosyvoice1'
+        elif 'ttsfrd' in dir_name.lower():
+            return 'ttsfrd'
+        else:
+            # 尝试通过配置文件检测
+            if os.path.exists(os.path.join(model_path, 'cosyvoice3.yaml')):
+                return 'cosyvoice3'
+            elif os.path.exists(os.path.join(model_path, 'cosyvoice2.yaml')):
+                return 'cosyvoice2'
+            elif os.path.exists(os.path.join(model_path, 'cosyvoice.yaml')):
+                return 'cosyvoice1'
+            else:
+                return 'unknown'
+
     def check_cosyvoice3_model_integrity(self, model_path=None) -> tuple:
         """
-        检查 CosyVoice3 模型完整性
+        检查 CosyVoice 模型完整性（自动检测模型类型）
 
         Args:
             model_path: 模型路径，默认为 Fun-CosyVoice3-0.5B-2512
@@ -182,10 +206,33 @@ class PathManager:
             if not os.path.exists(model_path):
                 return False, [], f"模型目录不存在: {model_path}"
 
-            # CosyVoice3 必需的文件
-            required_model_files = ['llm.pt', 'flow.pt', 'hift.pt']
-            required_config_files = ['cosyvoice3.yaml']
-            required_assets = ['campplus.onnx', 'speech_tokenizer_v3.onnx']
+            # 检测模型类型
+            model_type = self._detect_model_type_from_path(model_path)
+
+            # 根据模型类型确定必需文件
+            if model_type == 'cosyvoice3':
+                required_model_files = ['llm.pt', 'flow.pt', 'hift.pt']
+                required_config_files = ['cosyvoice3.yaml']
+                required_assets = ['campplus.onnx', 'speech_tokenizer_v3.onnx']
+            elif model_type == 'cosyvoice2':
+                required_model_files = ['llm.pt', 'flow.pt', 'hift.pt']
+                required_config_files = ['cosyvoice2.yaml']
+                required_assets = ['campplus.onnx', 'speech_tokenizer_v1.onnx']
+            elif model_type == 'cosyvoice1':
+                # CosyVoice 1.0 (300M, SFT, Instruct)
+                required_model_files = ['llm.pt', 'flow.pt', 'hift.pt']
+                required_config_files = ['cosyvoice.yaml']
+                required_assets = ['campplus.onnx', 'speech_tokenizer_v1.onnx']
+            elif model_type == 'ttsfrd':
+                # TTSFRD 资源包
+                required_model_files = []
+                required_config_files = []
+                required_assets = ['resource.zip']
+            else:
+                # 未知类型，使用宽松检查
+                required_model_files = []
+                required_config_files = []
+                required_assets = []
 
             missing_files = []
 
@@ -207,19 +254,20 @@ class PathManager:
                 if not os.path.exists(file_path):
                     missing_files.append(f"资源文件: {asset}")
 
-            # 检查 CosyVoice-BlankEN 子模型
-            blanken_dir = os.path.join(model_path, 'CosyVoice-BlankEN')
-            if os.path.exists(blanken_dir):
-                # 检查子模型权重文件
-                weight_patterns = ['pytorch_model.bin', 'model.safetensors']
-                has_weights = False
-                for file in os.listdir(blanken_dir):
-                    if any(file.endswith(pattern) for pattern in weight_patterns):
-                        has_weights = True
-                        break
+            # 检查 CosyVoice-BlankEN 子模型（仅 CosyVoice3）
+            if model_type == 'cosyvoice3':
+                blanken_dir = os.path.join(model_path, 'CosyVoice-BlankEN')
+                if os.path.exists(blanken_dir):
+                    # 检查子模型权重文件
+                    weight_patterns = ['pytorch_model.bin', 'model.safetensors']
+                    has_weights = False
+                    for file in os.listdir(blanken_dir):
+                        if any(file.endswith(pattern) for pattern in weight_patterns):
+                            has_weights = True
+                            break
 
-                if not has_weights:
-                    missing_files.append("CosyVoice-BlankEN 子模型权重文件")
+                    if not has_weights:
+                        missing_files.append("CosyVoice-BlankEN 子模型权重文件")
 
             is_complete = len(missing_files) == 0
             error_msg = f"缺失 {len(missing_files)} 个必需文件" if missing_files else ""
